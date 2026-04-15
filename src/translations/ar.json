@@ -1,0 +1,51 @@
+{
+  "onboarding": {
+    "message": "مرحبا بكم في موقع تطبيق obytes"
+  },
+  "settings": {
+    "about": "حول التطبيق ",
+    "acceleration": "إعدادات التسارع",
+    "algorithm": "إعدادات الخوارزمية",
+    "app_name": "اسم التطبيق",
+    "apply_rotation": "تطبيق الدوران",
+    "arabic": "عربي",
+    "english": "إنجليزي",
+    "generale": "عام",
+    "github": "جيثب",
+    "hpf_cutoff": "تردد قطع HPF (Hz)",
+    "integration_source": "مصدر تسارع التكامل",
+    "integration_source_hp": "مرشح مرتفع (HP)",
+    "integration_source_lp": "مرشح منخفض (LP)",
+    "integration_source_raw": "خام",
+    "language": "لغة",
+    "links": "الروابط",
+    "logout": "تسجيل خروج",
+    "lpf_cutoff": "تردد قطع LPF (Hz)",
+    "mass": "كتلة الزلاجة (كجم)",
+    "more": "أكثر",
+    "privacy": "سياسة الخصوصية",
+    "rate": "تقييم",
+    "remove_bias": "إزالة الانحياز",
+    "reset_defaults": "إعادة الضبط",
+    "share": "شارك",
+    "smooth_window": "نافذة التمهيد",
+    "support": "الدعم",
+    "support_us": "ادعمنا",
+    "terms": "شروط الخدمة",
+    "theme": {
+      "dark": "مظلم",
+      "light": "خفيفة",
+      "system": "System",
+      "title": "سمة"
+    },
+    "title": "إعدادات",
+    "vel_leak": "تسرب السرعة",
+    "version": "إصدار",
+    "website": "موقع الكتروني",
+    "zupt_accel": "عتبة تسارع ZUPT",
+    "zupt_bias_alpha": "معامل EMA لتحيز ZUPT",
+    "zupt_gyro": "عتبة جيروسكوب ZUPT",
+    "zupt_min_time": "وقت ZUPT الأدنى (ث)"
+  },
+  "welcome": "test arabic"
+}

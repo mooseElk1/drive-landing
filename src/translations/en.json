@@ -1,0 +1,51 @@
+{
+  "onboarding": {
+    "message": "Welcome to obytes app site"
+  },
+  "settings": {
+    "about": "About",
+    "acceleration": "Acceleration Settings",
+    "algorithm": "Algorithm Settings",
+    "app_name": "App Name",
+    "apply_rotation": "Apply Rotation",
+    "arabic": "Arabic",
+    "english": "English",
+    "generale": "General",
+    "github": "Github",
+    "hpf_cutoff": "HPF Cutoff (Hz)",
+    "integration_source": "Integration Accel Source",
+    "integration_source_hp": "High-pass (HP)",
+    "integration_source_lp": "Low-pass (LP)",
+    "integration_source_raw": "Raw",
+    "language": "Language",
+    "links": "Links",
+    "logout": "Logout",
+    "lpf_cutoff": "LPF Cutoff (Hz)",
+    "mass": "Sled Mass (kg)",
+    "more": "More",
+    "privacy": "Privacy Policy",
+    "rate": "Rate",
+    "remove_bias": "Remove Bias",
+    "reset_defaults": "Reset to Defaults",
+    "share": "Share",
+    "smooth_window": "Smooth Window",
+    "support": "Support",
+    "support_us": "Support Us",
+    "terms": "Terms of Service",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System",
+      "title": "Theme"
+    },
+    "title": "Settings",
+    "vel_leak": "Velocity Leak",
+    "version": "Version",
+    "website": "Website",
+    "zupt_accel": "ZUPT Accel Threshold",
+    "zupt_bias_alpha": "ZUPT Bias EMA Alpha",
+    "zupt_gyro": "ZUPT Gyro Threshold",
+    "zupt_min_time": "ZUPT Min Time (s)"
+  },
+  "welcome": "Welcome to obytes app site"
+}
