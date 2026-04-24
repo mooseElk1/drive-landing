@@ -2,9 +2,9 @@ import React from 'react';
 import type { PressableProps, ViewProps } from 'react-native';
 import { Pressable, View } from 'react-native';
 
-export const TILE_RADIUS = 16;
+export const TILE_RADIUS = 24;
 // NOTE: Keep this static. NativeWind can't reliably apply dynamic classnames.
-const TILE_RADIUS_CLASS = 'rounded-2xl';
+const TILE_RADIUS_CLASS = 'rounded-3xl';
 
 type TileVariant = 'stat' | 'full';
 
