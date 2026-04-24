@@ -5,6 +5,7 @@ import { showMessage } from 'react-native-flash-message';
 
 import { ConfigurableChart } from '@/components/configurable-chart';
 import { LiveStatTiles } from '@/components/live-stat-tiles';
+import { SledMassTile } from '@/components/sled-mass-tile';
 import {
   FocusAwareStatusBar,
   Pressable,
@@ -254,6 +255,7 @@ function WorkoutContent({
       >
         <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
           <LiveStatTiles />
+          <SledMassTile />
           <ConfigurableChart isLogging={isLogging} />
           <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
         </SafeAreaView>
