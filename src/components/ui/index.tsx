@@ -12,6 +12,7 @@ export * from './modal';
 export * from './progress-bar';
 export * from './select';
 export * from './text';
+export * from './tile';
 export * from './utils';
 
 // export base components from react-native

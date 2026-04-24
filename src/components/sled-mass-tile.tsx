@@ -2,7 +2,7 @@ import { useColorScheme } from 'nativewind';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View as RNView } from 'react-native';
 
-import { Pressable, Text } from '@/components/ui';
+import { Pressable, Text, Tile } from '@/components/ui';
 import colors from '@/components/ui/colors';
 import { Modal, useModal } from '@/components/ui/modal';
 import { useCalculationConfigStore } from '@/store/calculation-config';
@@ -87,16 +87,17 @@ export function SledMassTile() {
   const massRef = useRef(config.mass);
   massRef.current = config.mass;
 
-  const tileBg = isDark ? colors.charcoal[900] : colors.neutral[100];
   const labelColor = isDark ? colors.neutral[400] : colors.neutral[500];
   const valueColor = isDark ? colors.neutral[100] : colors.neutral[900];
   const unitColor = isDark ? colors.neutral[500] : colors.neutral[400];
 
   return (
     <>
-      <Pressable
+      <Tile
+        pressable
+        variant="full"
         onPress={modal.present}
-        style={[tileStyles.tile, { backgroundColor: tileBg }]}
+        className="mx-5 mb-2 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900"
       >
         <Text style={[tileStyles.label, { color: labelColor }]}>
           {'SLED MASS'}
@@ -107,7 +108,7 @@ export function SledMassTile() {
           </Text>
           <Text style={[tileStyles.unit, { color: unitColor }]}>{'KG'}</Text>
         </RNView>
-      </Pressable>
+      </Tile>
 
       <EditMassModal
         modal={modal}
@@ -119,13 +120,6 @@ export function SledMassTile() {
 }
 
 const tileStyles = StyleSheet.create({
-  tile: {
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginHorizontal: 20,
-    marginBottom: 8,
-  },
   label: {
     fontSize: 10,
     fontWeight: '700',

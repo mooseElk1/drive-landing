@@ -17,6 +17,10 @@ If you’re the “vibe coder” mostly touching screens and components, these a
   - `src/features/[feature-name]/components/`
   - `src/components/ui/` (generic, reusable UI building blocks)
 
+**Tile/Card standard**
+
+- Use the `Tile` primitive (`src/components/ui/tile.tsx`) for any new “tile” UI (stat cards, input tiles, etc.) so corner radius and padding stay consistent across the app.
+
 ### Safe Places for UI Work
 
 **Good folders to edit:**

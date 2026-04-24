@@ -1,7 +1,7 @@
 import { useColorScheme } from 'nativewind';
 import { StyleSheet, View } from 'react-native';
 
-import { Text } from '@/components/ui';
+import { Text, Tile } from '@/components/ui';
 import colors from '@/components/ui/colors';
 import { useLoggedData } from '@/providers/logged-data-context';
 import { CHANNELS } from '@/types/channel-names';
@@ -20,28 +20,27 @@ export function LiveStatTiles() {
   const currentPower: number | null =
     powerArr.length > 0 ? (powerArr[powerArr.length - 1] ?? null) : null;
 
-  const tileBg = isDark ? colors.charcoal[900] : colors.neutral[100];
   const labelColor = isDark ? colors.neutral[400] : colors.neutral[500];
   const valueColor = isDark ? colors.neutral[100] : colors.neutral[900];
   const unitColor = isDark ? colors.neutral[500] : colors.neutral[400];
 
   return (
     <View style={styles.row}>
-      <View style={[styles.tile, { backgroundColor: tileBg }]}>
+      <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
         <Text style={[styles.label, { color: labelColor }]}>{'VELOCITY'}</Text>
         <Text style={[styles.value, { color: valueColor }]}>
           {currentVelocity !== null ? currentVelocity.toFixed(2) : '--'}
         </Text>
         <Text style={[styles.unit, { color: unitColor }]}>{'m/s'}</Text>
-      </View>
+      </Tile>
 
-      <View style={[styles.tile, { backgroundColor: tileBg }]}>
+      <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
         <Text style={[styles.label, { color: labelColor }]}>{'POWER'}</Text>
         <Text style={[styles.value, { color: valueColor }]}>
           {currentPower !== null ? Math.round(currentPower).toString() : '--'}
         </Text>
         <Text style={[styles.unit, { color: unitColor }]}>{'W'}</Text>
-      </View>
+      </Tile>
     </View>
   );
 }
@@ -53,13 +52,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 8,
     paddingTop: 4,
-  },
-  tile: {
-    flex: 1,
-    alignItems: 'center',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
   },
   label: {
     fontSize: 10,
