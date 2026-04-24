@@ -3,6 +3,8 @@ import type { PressableProps, ViewProps } from 'react-native';
 import { Pressable, View } from 'react-native';
 
 export const TILE_RADIUS = 16;
+// NOTE: Keep this static. NativeWind can't reliably apply dynamic classnames.
+const TILE_RADIUS_CLASS = 'rounded-2xl';
 
 type TileVariant = 'stat' | 'full';
 
@@ -27,7 +29,7 @@ export function Tile(props: TileViewProps | TilePressableProps) {
     } = props;
     const baseClassName =
       variant === 'stat' ? 'flex-1 items-center px-2 py-3' : 'px-4 py-3';
-    const combinedClassName = `rounded-[${TILE_RADIUS}px] ${baseClassName} ${className}`;
+    const combinedClassName = `${TILE_RADIUS_CLASS} ${baseClassName} ${className}`;
     return <Pressable className={combinedClassName} style={style} {...rest} />;
   }
 
@@ -39,6 +41,6 @@ export function Tile(props: TileViewProps | TilePressableProps) {
   } = props as TileViewProps;
   const baseClassName =
     variant === 'stat' ? 'flex-1 items-center px-2 py-3' : 'px-4 py-3';
-  const combinedClassName = `rounded-[${TILE_RADIUS}px] ${baseClassName} ${className}`;
+  const combinedClassName = `${TILE_RADIUS_CLASS} ${baseClassName} ${className}`;
   return <View className={combinedClassName} style={style} {...rest} />;
 }
