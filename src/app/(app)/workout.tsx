@@ -1,3 +1,4 @@
+import { useColorScheme } from 'nativewind';
 import React, { useRef, useState } from 'react';
 import { StyleSheet, View as RNView } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
@@ -160,6 +161,72 @@ function WorkoutScreen() {
   );
 }
 
+function SaveSprintModal({
+  saveModal,
+  isSaving,
+  onSave,
+  onDiscard,
+}: {
+  saveModal: ReturnType<typeof useModal>;
+  isSaving: boolean;
+  onSave: () => void;
+  onDiscard: () => void;
+}) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  const sheetBg = isDark ? '#1E1E1E' : '#F5F5F5';
+  const handleBg = isDark ? '#474747' : '#D4D4D4';
+  const subtitleColor = isDark ? '#737373' : '#525252';
+  const discardBorderColor = isDark ? '#474747' : '#D4D4D4';
+  const discardLabelColor = isDark ? '#A3A3A3' : '#525252';
+
+  return (
+    <Modal
+      ref={saveModal.ref}
+      snapPoints={['38%']}
+      title={'Save Sprint?'}
+      backgroundStyle={{ backgroundColor: sheetBg }}
+      handleIndicatorStyle={{ backgroundColor: handleBg }}
+    >
+      <RNView style={sheetStyles.body}>
+        <Text style={[sheetStyles.subtitle, { color: subtitleColor }]}>
+          {'Would you like to save or discard this sprint?'}
+        </Text>
+        <Pressable
+          disabled={isSaving}
+          onPress={onSave}
+          style={[
+            sheetStyles.btn,
+            sheetStyles.btnSave,
+            isSaving && sheetStyles.btnDisabled,
+          ]}
+        >
+          <Text style={sheetStyles.btnLabelSave}>
+            {isSaving ? 'Saving…' : 'Save'}
+          </Text>
+        </Pressable>
+        <Pressable
+          disabled={isSaving}
+          onPress={onDiscard}
+          style={[
+            sheetStyles.btn,
+            sheetStyles.btnDiscard,
+            { borderColor: discardBorderColor },
+            isSaving && sheetStyles.btnDisabled,
+          ]}
+        >
+          <Text
+            style={[sheetStyles.btnLabelDiscard, { color: discardLabelColor }]}
+          >
+            {'Discard'}
+          </Text>
+        </Pressable>
+      </RNView>
+    </Modal>
+  );
+}
+
 function WorkoutContent({
   isLogging,
   isSaving,
@@ -191,40 +258,12 @@ function WorkoutContent({
           <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
         </SafeAreaView>
       </ScrollView>
-
-      <Modal ref={saveModal.ref} snapPoints={['38%']} title={'Save Sprint?'}>
-        <RNView style={sheetStyles.body}>
-          <Text style={sheetStyles.subtitle}>
-            {'Would you like to save or discard this sprint?'}
-          </Text>
-
-          <Pressable
-            disabled={isSaving}
-            onPress={() => void onSave(loggedData)}
-            style={[
-              sheetStyles.btn,
-              sheetStyles.btnSave,
-              isSaving && sheetStyles.btnDisabled,
-            ]}
-          >
-            <Text style={sheetStyles.btnLabelSave}>
-              {isSaving ? 'Saving…' : 'Save'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            disabled={isSaving}
-            onPress={onDiscard}
-            style={[
-              sheetStyles.btn,
-              sheetStyles.btnDiscard,
-              isSaving && sheetStyles.btnDisabled,
-            ]}
-          >
-            <Text style={sheetStyles.btnLabelDiscard}>{'Discard'}</Text>
-          </Pressable>
-        </RNView>
-      </Modal>
+      <SaveSprintModal
+        saveModal={saveModal}
+        isSaving={isSaving}
+        onSave={() => void onSave(loggedData)}
+        onDiscard={onDiscard}
+      />
     </>
   );
 }
@@ -237,7 +276,6 @@ const sheetStyles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -248,12 +286,11 @@ const sheetStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnSave: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#FF8C00', // primary-400
   },
   btnDiscard: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#374151',
   },
   btnDisabled: {
     opacity: 0.5,
@@ -264,7 +301,6 @@ const sheetStyles = StyleSheet.create({
     fontWeight: '700',
   },
   btnLabelDiscard: {
-    color: '#9CA3AF',
     fontSize: 16,
     fontWeight: '600',
   },
