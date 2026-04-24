@@ -2,11 +2,11 @@
 import '../../global.css';
 
 import {
-  SpaceGrotesk_400Regular,
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-  SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+  Rajdhani_400Regular,
+  Rajdhani_500Medium,
+  Rajdhani_600SemiBold,
+  Rajdhani_700Bold,
+} from '@expo-google-fonts/rajdhani';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -42,10 +42,10 @@ SplashScreen.setOptions({
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    'SpaceGrotesk-Regular': SpaceGrotesk_400Regular,
-    'SpaceGrotesk-Medium': SpaceGrotesk_500Medium,
-    'SpaceGrotesk-SemiBold': SpaceGrotesk_600SemiBold,
-    'SpaceGrotesk-Bold': SpaceGrotesk_700Bold,
+    'Rajdhani-Regular': Rajdhani_400Regular,
+    'Rajdhani-Medium': Rajdhani_500Medium,
+    'Rajdhani-SemiBold': Rajdhani_600SemiBold,
+    'Rajdhani-Bold': Rajdhani_700Bold,
   });
 
   if (!fontsLoaded) {

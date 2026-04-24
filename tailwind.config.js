@@ -10,27 +10,17 @@ module.exports = {
     extend: {
       fontFamily: {
         inter: ['Inter'],
-        primary: [
-          'SpaceGrotesk-Regular',
-          'Space Grotesk',
-          'system-ui',
-          'sans-serif',
-        ],
-        primaryBold: [
-          'SpaceGrotesk-Bold',
-          'Space Grotesk',
-          'system-ui',
-          'sans-serif',
-        ],
+        primary: ['Rajdhani-Regular', 'Rajdhani', 'system-ui', 'sans-serif'],
+        primaryBold: ['Rajdhani-Bold', 'Rajdhani', 'system-ui', 'sans-serif'],
         primaryMedium: [
-          'SpaceGrotesk-Medium',
-          'Space Grotesk',
+          'Rajdhani-Medium',
+          'Rajdhani',
           'system-ui',
           'sans-serif',
         ],
         primarySemiBold: [
-          'SpaceGrotesk-SemiBold',
-          'Space Grotesk',
+          'Rajdhani-SemiBold',
+          'Rajdhani',
           'system-ui',
           'sans-serif',
         ],
