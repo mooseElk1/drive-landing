@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { showMessage } from 'react-native-flash-message';
 
 import { ConfigurableChart } from '@/components/configurable-chart';
+import { LiveStatTiles } from '@/components/live-stat-tiles';
 import {
   FocusAwareStatusBar,
   Pressable,
@@ -231,6 +232,7 @@ function WorkoutContent({
         automaticallyAdjustContentInsets={false}
       >
         <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
+          <LiveStatTiles />
           <ConfigurableChart isLogging={isLogging} />
           <WorkoutActions
             isLogging={isLogging}
