@@ -255,9 +255,9 @@ function WorkoutContent({
       >
         <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
           <LiveStatTiles />
-          <SledMassTile />
           <ConfigurableChart isLogging={isLogging} />
           <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
+          <SledMassTile />
         </SafeAreaView>
       </ScrollView>
       <SaveSprintModal
