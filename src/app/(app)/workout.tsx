@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { StyleSheet, View as RNView } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
 import { ConfigurableChart } from '@/components/configurable-chart';
@@ -11,6 +12,7 @@ import {
   Text,
   View,
 } from '@/components/ui';
+import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
 import { workoutHelper } from '@/features/workout/helpers/workout-helper';
 import {
@@ -21,75 +23,31 @@ import { useBufferSubscription, useWorkoutFileOperations } from '@/lib';
 import { useLoggedData } from '@/providers';
 import { logWorkoutData } from '@/services/logger';
 import { type WorkoutClass } from '@/types/workout';
-import { type WorkoutTrackingDatabase } from '@/types/workout-database';
 
-function ActionButton({
-  label,
+function StartStopButton({
+  isLogging,
   onPress,
-  buttonClassName,
-  labelClassName,
-  disabled = false,
 }: {
-  label: string;
+  isLogging: boolean;
   onPress: () => void;
-  buttonClassName: string;
-  labelClassName?: string;
-  disabled?: boolean;
 }) {
   return (
     <View className="mb-4 flex-row items-center justify-center">
       <Pressable
-        disabled={disabled}
         onPress={onPress}
-        className={`h-[51px] w-[85%] items-center justify-center rounded-full border px-8 ${buttonClassName}`}
-      >
-        <Text className={`text-base font-bold ${labelClassName ?? ''}`}>
-          {label}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function WorkoutActions({
-  isLogging,
-  toggleLogging,
-  onSave,
-  isSaving,
-}: {
-  isLogging: boolean;
-  toggleLogging: () => void;
-  onSave: () => void;
-  isSaving: boolean;
-}) {
-  return (
-    <>
-      <ActionButton
-        label={isLogging ? 'Stop' : 'Start'}
-        onPress={toggleLogging}
-        buttonClassName={
+        className={`h-[51px] w-[85%] items-center justify-center rounded-full border px-8 ${
           isLogging
             ? 'border-warning-500 bg-warning-500'
             : 'border-primary-400 bg-primary-400'
-        }
-        labelClassName={isLogging ? 'text-neutral-950' : 'text-white'}
-      />
-      <ActionButton
-        label={isSaving ? 'Saving...' : 'Save'}
-        onPress={onSave}
-        disabled={isSaving}
-        buttonClassName={
-          isSaving
-            ? 'border-neutral-400 bg-neutral-400 dark:border-neutral-600 dark:bg-neutral-600'
-            : 'border-neutral-300 bg-neutral-300 dark:border-neutral-700 dark:bg-neutral-700'
-        }
-        labelClassName={
-          isSaving
-            ? 'text-neutral-700 dark:text-neutral-300'
-            : 'text-neutral-900 dark:text-neutral-100'
-        }
-      />
-    </>
+        }`}
+      >
+        <Text
+          className={`text-base font-bold ${isLogging ? 'text-neutral-950' : 'text-white'}`}
+        >
+          {isLogging ? 'Stop' : 'Start'}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -107,24 +65,34 @@ function WorkoutScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const saveInFlightRef = useRef(false);
   const { dispatch } = useLoggedData();
+  const saveModal = useModal();
 
   const services = useWorkoutServices();
   const { saveWorkout, clearError } = useWorkoutFileOperations();
 
   useBufferSubscription(services.bufferService);
 
+  const handleStart = () => {
+    clearWorkoutData();
+    const nextServices = services.resetServices();
+    nextServices.sprintAnalysisService.startSprint();
+    services.sensorService.start();
+    setIsLogging(true);
+  };
+
+  const handleStop = () => {
+    services.sprintAnalysisService.stopSprint();
+    services.sensorService.stop();
+    setIsLogging(false);
+    saveModal.present();
+  };
+
   const toggleLogging = () => {
     if (!isLogging) {
-      clearWorkoutData();
-      // Recreate calculation + buffer (fresh velocity FSM)
-      const nextServices = services.resetServices();
-      nextServices.sprintAnalysisService.startSprint();
-      services.sensorService.start();
+      handleStart();
     } else {
-      services.sprintAnalysisService.stopSprint();
-      services.sensorService.stop();
+      handleStop();
     }
-    setIsLogging((prev) => !prev);
   };
 
   const clearWorkoutData = () => {
@@ -148,8 +116,6 @@ function WorkoutScreen() {
         data.data,
         services.sprintAnalysisService.getResult()
       );
-      // Run the save and a minimum display timer in parallel so the
-      // "Saving..." state is always visible for at least 900 ms.
       [result] = await Promise.all([
         saveWorkout(workout),
         new Promise<void>((resolve) => setTimeout(resolve, 900)),
@@ -177,34 +143,19 @@ function WorkoutScreen() {
   };
 
   return (
-    <WorkoutView
-      isLogging={isLogging}
-      isSaving={isSaving}
-      toggleLogging={toggleLogging}
-      createWorkout={handleSaveWorkout}
-    />
-  );
-}
-
-function WorkoutView({
-  isLogging,
-  isSaving,
-  toggleLogging,
-  createWorkout,
-}: {
-  isLogging: boolean;
-  isSaving: boolean;
-  toggleLogging: () => void;
-  createWorkout: (
-    data: WorkoutClass
-  ) => Promise<WorkoutTrackingDatabase | null>;
-}) {
-  return (
     <WorkoutContent
       isLogging={isLogging}
       isSaving={isSaving}
       toggleLogging={toggleLogging}
-      createWorkout={createWorkout}
+      onSave={async (data) => {
+        const result = await handleSaveWorkout(data);
+        if (result) saveModal.dismiss();
+      }}
+      onDiscard={() => {
+        clearWorkoutData();
+        saveModal.dismiss();
+      }}
+      saveModal={saveModal}
     />
   );
 }
@@ -213,16 +164,19 @@ function WorkoutContent({
   isLogging,
   isSaving,
   toggleLogging,
-  createWorkout,
+  onSave,
+  onDiscard,
+  saveModal,
 }: {
   isLogging: boolean;
   isSaving: boolean;
   toggleLogging: () => void;
-  createWorkout: (
-    data: WorkoutClass
-  ) => Promise<WorkoutTrackingDatabase | null>;
+  onSave: (data: WorkoutClass) => Promise<void>;
+  onDiscard: () => void;
+  saveModal: ReturnType<typeof useModal>;
 }) {
   const { loggedData } = useLoggedData();
+
   return (
     <>
       <FocusAwareStatusBar />
@@ -234,16 +188,84 @@ function WorkoutContent({
         <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
           <LiveStatTiles />
           <ConfigurableChart isLogging={isLogging} />
-          <WorkoutActions
-            isLogging={isLogging}
-            isSaving={isSaving}
-            toggleLogging={toggleLogging}
-            onSave={() => {
-              void createWorkout(loggedData);
-            }}
-          />
+          <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
         </SafeAreaView>
       </ScrollView>
+
+      <Modal ref={saveModal.ref} snapPoints={['38%']} title={'Save Sprint?'}>
+        <RNView style={sheetStyles.body}>
+          <Text style={sheetStyles.subtitle}>
+            {'Would you like to save or discard this sprint?'}
+          </Text>
+
+          <Pressable
+            disabled={isSaving}
+            onPress={() => void onSave(loggedData)}
+            style={[
+              sheetStyles.btn,
+              sheetStyles.btnSave,
+              isSaving && sheetStyles.btnDisabled,
+            ]}
+          >
+            <Text style={sheetStyles.btnLabelSave}>
+              {isSaving ? 'Saving…' : 'Save'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            disabled={isSaving}
+            onPress={onDiscard}
+            style={[
+              sheetStyles.btn,
+              sheetStyles.btnDiscard,
+              isSaving && sheetStyles.btnDisabled,
+            ]}
+          >
+            <Text style={sheetStyles.btnLabelDiscard}>{'Discard'}</Text>
+          </Pressable>
+        </RNView>
+      </Modal>
     </>
   );
 }
+
+const sheetStyles = StyleSheet.create({
+  body: {
+    paddingHorizontal: 24,
+    paddingTop: 4,
+    gap: 12,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  btn: {
+    height: 52,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnSave: {
+    backgroundColor: '#3B82F6',
+  },
+  btnDiscard: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  btnDisabled: {
+    opacity: 0.5,
+  },
+  btnLabelSave: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  btnLabelDiscard: {
+    color: '#9CA3AF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
