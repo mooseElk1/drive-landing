@@ -21,19 +21,13 @@ export function LiveStatTiles() {
     powerArr.length > 0 ? (powerArr[powerArr.length - 1] ?? null) : null;
 
   const tileBg = isDark ? colors.charcoal[900] : colors.neutral[100];
-  const tileBorder = isDark ? colors.charcoal[700] : colors.neutral[300];
   const labelColor = isDark ? colors.neutral[400] : colors.neutral[500];
   const valueColor = isDark ? colors.neutral[100] : colors.neutral[900];
   const unitColor = isDark ? colors.neutral[500] : colors.neutral[400];
 
   return (
     <View style={styles.row}>
-      <View
-        style={[
-          styles.tile,
-          { backgroundColor: tileBg, borderColor: tileBorder },
-        ]}
-      >
+      <View style={[styles.tile, { backgroundColor: tileBg }]}>
         <Text style={[styles.label, { color: labelColor }]}>{'VELOCITY'}</Text>
         <Text style={[styles.value, { color: valueColor }]}>
           {currentVelocity !== null ? currentVelocity.toFixed(2) : '--'}
@@ -41,12 +35,7 @@ export function LiveStatTiles() {
         <Text style={[styles.unit, { color: unitColor }]}>{'m/s'}</Text>
       </View>
 
-      <View
-        style={[
-          styles.tile,
-          { backgroundColor: tileBg, borderColor: tileBorder },
-        ]}
-      >
+      <View style={[styles.tile, { backgroundColor: tileBg }]}>
         <Text style={[styles.label, { color: labelColor }]}>{'POWER'}</Text>
         <Text style={[styles.value, { color: valueColor }]}>
           {currentPower !== null ? Math.round(currentPower).toString() : '--'}
@@ -69,7 +58,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     borderRadius: 10,
-    borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 8,
   },

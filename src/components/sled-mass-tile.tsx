@@ -88,7 +88,6 @@ export function SledMassTile() {
   massRef.current = config.mass;
 
   const tileBg = isDark ? colors.charcoal[900] : colors.neutral[100];
-  const tileBorder = isDark ? colors.charcoal[700] : colors.neutral[300];
   const labelColor = isDark ? colors.neutral[400] : colors.neutral[500];
   const valueColor = isDark ? colors.neutral[100] : colors.neutral[900];
   const unitColor = isDark ? colors.neutral[500] : colors.neutral[400];
@@ -97,10 +96,7 @@ export function SledMassTile() {
     <>
       <Pressable
         onPress={modal.present}
-        style={[
-          tileStyles.tile,
-          { backgroundColor: tileBg, borderColor: tileBorder },
-        ]}
+        style={[tileStyles.tile, { backgroundColor: tileBg }]}
       >
         <Text style={[tileStyles.label, { color: labelColor }]}>
           {'SLED MASS'}
@@ -125,7 +121,6 @@ export function SledMassTile() {
 const tileStyles = StyleSheet.create({
   tile: {
     borderRadius: 10,
-    borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 14,
     marginHorizontal: 20,
