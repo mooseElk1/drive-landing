@@ -16,6 +16,9 @@ import {
 } from '@/components/ui';
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
+import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
+import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
+import { usePowerSessionStore } from '@/features/power-profile/store/power-session-store';
 import { workoutHelper } from '@/features/workout/helpers/workout-helper';
 import {
   useWorkoutServices,
@@ -24,6 +27,7 @@ import {
 import { useBufferSubscription, useWorkoutFileOperations } from '@/lib';
 import { useLoggedData } from '@/providers';
 import { logWorkoutData } from '@/services/logger';
+import { useCalculationConfigStore } from '@/store/calculation-config';
 import { type WorkoutClass } from '@/types/workout';
 
 function StartStopButton({
@@ -72,6 +76,11 @@ function WorkoutScreen() {
   const services = useWorkoutServices();
   const { saveWorkout, clearError } = useWorkoutFileOperations();
 
+  const massKg = useCalculationConfigStore((s) => s.config.mass);
+  const activeAthleteId = useAthleteProfileStore((s) => s.activeAthleteId);
+  const getAthleteById = useAthleteProfileStore((s) => s.getAthleteById);
+  const sessionId = usePowerSessionStore((s) => s.sessionId);
+
   useBufferSubscription(services.bufferService);
 
   const handleStart = () => {
@@ -118,8 +127,32 @@ function WorkoutScreen() {
         data.data,
         services.sprintAnalysisService.getResult()
       );
+
+      const athlete = activeAthleteId ? getAthleteById(activeAthleteId) : null;
+      const pplAtTimeOfSprint = athlete?.currentPPL?.pplLoadKg ?? null;
+
+      // We always stamp load and surface; other power-profile fields are derived.
+      const baseMetricsPatch = {
+        athleteId: activeAthleteId ?? null,
+        loadKg: massKg,
+        sessionId: sessionId ?? null,
+        surfaceType: 'turf' as const,
+        pplAtTimeOfSprint,
+      };
+
+      // Resolve power measurement mode from peakPower (computed inside persistence),
+      // so we best-effort stamp what we can here and let persistence layer merge.
+      // We also compute zoneAtRecording if PPL is known.
+      const metricsPatch =
+        pplAtTimeOfSprint && pplAtTimeOfSprint > 0
+          ? {
+              ...baseMetricsPatch,
+              zoneAtRecording: classifyLoad(massKg, pplAtTimeOfSprint),
+            }
+          : baseMetricsPatch;
+
       [result] = await Promise.all([
-        saveWorkout(workout),
+        saveWorkout(workout, { metricsPatch }),
         new Promise<void>((resolve) => setTimeout(resolve, 900)),
       ]);
     } finally {

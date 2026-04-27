@@ -301,13 +301,17 @@ export const writeWorkoutDatabase = async (
  * Save a workout to the file system and database
  */
 export const persistWorkout = async (
-  workout: WorkoutClass
+  workout: WorkoutClass,
+  options?: {
+    metricsPatch?: Partial<WorkoutEntry['metrics']>;
+  }
 ): Promise<WorkoutTrackingDatabase> => {
   await initializeWorkoutDatabase();
 
   const filePath = createWorkoutDataFilePath();
   const duration = calculateDuration(workout.data);
-  const metrics = calculateWorkoutMetrics(workout.data);
+  const baseMetrics = calculateWorkoutMetrics(workout.data);
+  const metrics = { ...baseMetrics, ...(options?.metricsPatch ?? {}) };
 
   const entry = createWorkoutEntry({
     name: workout.name,

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { useCallback, useState } from 'react';
 
 import {
@@ -26,7 +27,8 @@ interface WorkoutFileOperations {
 
   // Persistence operations (delegated to service)
   saveWorkout: (
-    workout: WorkoutClass
+    workout: WorkoutClass,
+    options?: Parameters<typeof persistWorkout>[1]
   ) => Promise<WorkoutTrackingDatabase | null>;
   deleteWorkout: (
     entry: WorkoutEntry
@@ -84,7 +86,7 @@ export function useWorkoutFileOperations(): WorkoutFileOperations {
           const channelData =
             workout.data.channels instanceof Map
               ? workout.data.channels.get(channelName)
-              : (workout.data.channels as Record<string, any>)[channelName];
+              : (workout.data.channels as Record<string, unknown>)[channelName];
           return total + (Array.isArray(channelData) ? channelData.length : 0);
         }, 0);
 
@@ -128,11 +130,14 @@ export function useWorkoutFileOperations(): WorkoutFileOperations {
     }, []);
 
   const saveWorkout = useCallback(
-    async (workout: WorkoutClass): Promise<WorkoutTrackingDatabase | null> => {
+    async (
+      workout: WorkoutClass,
+      options?: Parameters<typeof persistWorkout>[1]
+    ): Promise<WorkoutTrackingDatabase | null> => {
       try {
         setIsLoading(true);
         setError(null);
-        return await persistWorkout(workout);
+        return await persistWorkout(workout, options);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to save workout';
