@@ -3,6 +3,15 @@
     "message": "Welcome to obytes app site"
   },
   "powerProfile": {
+    "history": {
+      "sessions": {
+        "empty": "No sessions yet"
+      },
+      "tabs": {
+        "sessions": "Sessions",
+        "sprints": "Sprints"
+      }
+    },
     "profileSetup": {
       "actions": {
         "create": "Create profile"

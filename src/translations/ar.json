@@ -3,6 +3,15 @@
     "message": "مرحبا بكم في موقع تطبيق obytes"
   },
   "powerProfile": {
+    "history": {
+      "sessions": {
+        "empty": "لا توجد جلسات بعد"
+      },
+      "tabs": {
+        "sessions": "الجلسات",
+        "sprints": "الانطلاقات"
+      }
+    },
     "profileSetup": {
       "actions": {
         "create": "إنشاء الملف"
