@@ -24,15 +24,30 @@
     },
     "profileSetup": {
       "actions": {
-        "create": "Create profile"
+        "create": "Create profile",
+        "goToProfile": "Go to profile",
+        "save": "Save"
       },
+      "editTitle": "Edit profile",
       "fields": {
         "bodyWeightKg": "Body weight (kg) (optional)",
         "name": "Athlete name"
       },
+      "noAthlete": "No athlete profile found on this device.",
+      "powerProfile": {
+        "cta": "Go to Sprint",
+        "empty": "No power profile yet. Record sprints to establish it.",
+        "mode": "Mode",
+        "peakPowerW": "Peak power (W)",
+        "pplLoadKg": "PPL load (kg)",
+        "title": "Power profile",
+        "updated": "Updated"
+      },
       "singleProfileNotice": "A profile already exists. Delete it in Settings to create a new one.",
       "subtitle": "Body weight is optional, but helps personalise load targets.",
-      "title": "Create athlete profile"
+      "subtitleEdit": "Update your profile details for this device.",
+      "title": "Create athlete profile",
+      "titleEdit": "Athlete profile"
     },
     "sessionDetail": {
       "axis": {

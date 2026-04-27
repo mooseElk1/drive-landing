@@ -1,9 +1,32 @@
 import '@testing-library/react-native/extend-expect';
 
+// FlashList is ESM and breaks Jest in this repo. Mock it globally.
+jest.mock('@shopify/flash-list', () => ({
+  FlashList: () => null,
+}));
+
+// The app logger starts an interval timer at module load time.
+// Mock it globally so Jest can exit cleanly.
+jest.mock('@/services/logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    flush: jest.fn(),
+    dispose: jest.fn(),
+  },
+  logVelocityFSM: jest.fn(),
+  logWorkoutData: jest.fn(),
+  logPerformance: jest.fn(),
+  logError: jest.fn(),
+  cleanupLogger: jest.fn(),
+}));
+
 // react-hook form setup for testing
-// @ts-ignore
+// @ts-ignore - jest env: window is missing by default
 global.window = {};
-// @ts-ignore
+// @ts-ignore - jest env: window should alias global
 global.window = global;
 
 // Provide a minimal mock for expo-file-system so that BufferedLogger (which
