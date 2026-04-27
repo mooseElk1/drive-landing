@@ -13,6 +13,32 @@
       },
       "subtitle": "Body weight is optional, but helps personalise load targets.",
       "title": "Create athlete profile"
+    },
+    "sessionStart": {
+      "actions": {
+        "end": "End session",
+        "start": "Start session"
+      },
+      "athlete": {
+        "guest": "Guest (unattached)",
+        "label": "Athlete"
+      },
+      "subtitle": "Select an athlete and optionally set a training zone.",
+      "suggestions": {
+        "aria": "toggle load suggestions",
+        "label": "Enable load suggestions"
+      },
+      "title": "Start session",
+      "zone": {
+        "label": "Target zone"
+      },
+      "zones": {
+        "none": "None (free training)",
+        "overload": "Overload",
+        "peakPower": "Peak Power",
+        "speedStrength": "Speed-Strength",
+        "strengthSpeed": "Strength-Speed"
+      }
     }
   },
   "settings": {

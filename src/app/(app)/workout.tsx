@@ -16,6 +16,7 @@ import {
 } from '@/components/ui';
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
+import { SessionStartScreen } from '@/features/power-profile/screens/session-start.screen';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { usePowerSessionStore } from '@/features/power-profile/store/power-session-store';
@@ -58,6 +59,11 @@ function StartStopButton({
 }
 
 export default function Workout() {
+  const sessionId = usePowerSessionStore((s) => s.sessionId);
+  if (!sessionId) {
+    return <SessionStartScreen />;
+  }
+
   return (
     <WorkoutServicesProvider>
       <WorkoutScreen />
