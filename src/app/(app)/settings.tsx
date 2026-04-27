@@ -230,6 +230,10 @@ export default function Settings() {
                 );
               }}
             />
+            <Item
+              text="settings.style_guide"
+              onPress={() => router.push('/style')}
+            />
             <LanguageItem />
             <ThemeItem />
           </ItemsContainer>

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { SplashScreen, Tabs, useRouter } from 'expo-router';
 import React, { useCallback, useEffect } from 'react';
 import { Pressable } from 'react-native';
@@ -7,7 +6,6 @@ import {
   Feed as FeedIcon,
   Profile as ProfileIcon,
   Settings as SettingsIcon,
-  Style as StyleIcon,
 } from '@/components/ui/icons';
 
 export default function TabLayout() {
@@ -65,15 +63,8 @@ export default function TabLayout() {
 
       <Tabs.Screen name="sprint/[id]" options={{ href: null }} />
       <Tabs.Screen name="profile-setup" options={{ href: null }} />
+      <Tabs.Screen name="style" options={{ href: null }} />
 
-      <Tabs.Screen
-        name="style"
-        options={{
-          title: 'Style',
-          headerShown: false,
-          tabBarIcon: ({ color }) => <StyleIcon color={color} />,
-        }}
-      />
       <Tabs.Screen
         name="settings"
         options={{
