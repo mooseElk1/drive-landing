@@ -4,6 +4,12 @@ This app started from the [Obytes React Native Template](https://github.com/obyt
 
 This document describes the **current stack**, **folder structure**, and **rules for adding/changing code**, with an emphasis on making it safe and easy for a second developer (especially someone new to software) to do **UI-focused work**.
 
+## Development cycle (how we ship changes)
+
+We use **small, reviewable commits** with explicit **UI decision gates**, and we keep docs updated alongside code so your lead engineer can review and merge safely.
+
+See: `docs/development-cycle.md`.
+
 ---
 
 ## 1. If You’re New & Mostly Doing UI (Read This First)
