@@ -1,9 +1,12 @@
 import * as FileSystem from 'expo-file-system';
 
 import {
+  getSessions,
+  getSessionsInWindow,
   initializePowerProfileDatabases,
   readPowerProfileDb,
   readSessionsDb,
+  saveSession,
 } from '@/features/power-profile/services/power-profile-persistence';
 
 jest.setTimeout(20000);
@@ -136,4 +139,78 @@ test('readSessionsDb returns empty db shape when file missing', async () => {
   expect(db.metadata.version).toBe('1.0.0');
   expect(typeof db.metadata.createdAt).toBe('string');
   expect(typeof db.metadata.lastUpdated).toBe('string');
+});
+
+test('saveSession persists and getSessions returns athlete sessions', async () => {
+  await initializePowerProfileDatabases();
+
+  await saveSession({
+    sessionId: 's1',
+    athleteId: 'a1',
+    sprintIds: ['w1'],
+    startedAt: 1000,
+    completedAt: 2000,
+    testStatus: 'not_a_test',
+    testMode: null,
+    targetZone: null,
+    loadSuggestionsEnabled: true,
+    sessionPeakPower: null,
+    sessionPPLEstimate: null,
+  });
+
+  await saveSession({
+    sessionId: 's2',
+    athleteId: null,
+    sprintIds: ['w2'],
+    startedAt: 1500,
+    completedAt: null,
+    testStatus: 'not_a_test',
+    testMode: null,
+    targetZone: null,
+    loadSuggestionsEnabled: true,
+    sessionPeakPower: null,
+    sessionPPLEstimate: null,
+  });
+
+  const a1 = await getSessions('a1');
+  expect(a1.map((s) => s.sessionId)).toEqual(['s1']);
+
+  const unattached = await getSessions(null);
+  expect(unattached.map((s) => s.sessionId)).toEqual(['s2']);
+});
+
+test('getSessionsInWindow filters by startedAt cutoff', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(10_000_000);
+
+  await saveSession({
+    sessionId: 'old',
+    athleteId: 'a1',
+    sprintIds: [],
+    startedAt: 10_000_000 - 10 * 24 * 60 * 60 * 1000, // 10 days ago
+    completedAt: null,
+    testStatus: 'not_a_test',
+    testMode: null,
+    targetZone: null,
+    loadSuggestionsEnabled: true,
+    sessionPeakPower: null,
+    sessionPPLEstimate: null,
+  });
+  await saveSession({
+    sessionId: 'new',
+    athleteId: 'a1',
+    sprintIds: [],
+    startedAt: 10_000_000 - 1 * 24 * 60 * 60 * 1000, // 1 day ago
+    completedAt: null,
+    testStatus: 'not_a_test',
+    testMode: null,
+    targetZone: null,
+    loadSuggestionsEnabled: true,
+    sessionPeakPower: null,
+    sessionPPLEstimate: null,
+  });
+
+  const in7d = await getSessionsInWindow('a1', 7);
+  expect(in7d.map((s) => s.sessionId).sort()).toEqual(['new']);
+
+  jest.restoreAllMocks();
 });

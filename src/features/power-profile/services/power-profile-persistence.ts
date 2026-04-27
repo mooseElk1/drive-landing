@@ -173,3 +173,30 @@ export async function writeSessionsDb(
     await atomicWrite(SESSIONS_DB_PATH, JSON.stringify(db, null, 0));
   });
 }
+
+export async function saveSession(session: PowerProfileSession): Promise<void> {
+  const db = await readSessionsDb();
+  const next = {
+    ...db,
+    sessions: { ...db.sessions, [session.sessionId]: session },
+    metadata: { ...db.metadata, lastUpdated: new Date().toISOString() },
+  };
+  await writeSessionsDb(next);
+}
+
+export async function getSessions(
+  athleteId: string | null
+): Promise<PowerProfileSession[]> {
+  const db = await readSessionsDb();
+  return Object.values(db.sessions).filter((s) => s.athleteId === athleteId);
+}
+
+export async function getSessionsInWindow(
+  athleteId: string | null,
+  days: number
+): Promise<PowerProfileSession[]> {
+  const windowMs = days * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - windowMs;
+  const all = await getSessions(athleteId);
+  return all.filter((s) => s.startedAt >= cutoff);
+}
