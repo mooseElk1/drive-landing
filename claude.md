@@ -618,6 +618,18 @@ This makes individual reps easy to:
 
 ---
 
+---
+
+## Feature Documentation
+
+In-depth plans and architectural decisions for major features live in `docs/`. Read the relevant document before implementing or modifying a feature.
+
+| Feature                                                       | Document                                                                       | Cursor Rule                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------- |
+| Power Profile Framework (PPL, CI, sessions, athlete profiles) | [`docs/power-profile-framework-plan.md`](docs/power-profile-framework-plan.md) | `.cursor/rules/power-profile-feature.mdc` |
+
+---
+
 ### Interpretation & UI Rules (Reminder)
 
 - All signals come from a **sled-mounted** motion platform.

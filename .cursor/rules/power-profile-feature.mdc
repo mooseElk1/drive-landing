@@ -1,0 +1,177 @@
+---
+description: Architecture rules and implementation constraints for the DRIVE Power Profile feature (PPL, CI, sessions, athlete profiles). Read before creating or editing any power-profile code.
+globs: src/features/power-profile/**,src/app/(app)/power-profile*,src/app/(app)/discovery-test*,src/app/(app)/profile-setup*,src/app/(app)/session-history*,src/app/(app)/session-summary*,src/app/(app)/sprint/**,src/types/workout-database.ts
+alwaysApply: false
+---
+
+# Power Profile Feature — Implementation Rules
+
+Full plan: `docs/power-profile-framework-plan.md`. Read it before starting any phase.
+
+---
+
+## Folder Structure
+
+All new code lives under `src/features/power-profile/`. Route files in `src/app/(app)/` are thin wrappers only.
+
+```
+src/features/power-profile/
+├── constants.ts          # MIN_CALIBRATION_SAMPLES threshold (= 5)
+├── types/                # All PPL/CI/session/athlete types
+├── services/             # All calculation, persistence, detection logic
+├── store/                # athlete-profile-store, power-session-store
+├── hooks/                # Feature hooks only
+├── components/           # Feature UI components
+└── screens/              # Full-page screens
+```
+
+---
+
+## Power Measurement Mode — Critical
+
+**Never read power values directly in PPL services.** Always go through `power-source-service.resolveSprintPower()`.
+
+The app uses a four-tier `PowerMeasurementMode`:
+
+| Mode | When active |
+|---|---|
+| `'raw'` | Friction detection unavailable, calibration threshold not met |
+| `'calibrated'` | ≥ 5 calibration sprints for this surface; derived × learned ratio |
+| `'friction_corrected'` | Live friction detection at Medium/High confidence |
+| `'fused'` | Both channels active and agree within 5% |
+
+```ts
+// ✅ Correct
+const { power, mode } = resolveSprintPower(metrics, surfaceType, calibrationStats);
+
+// ❌ Wrong — bypasses abstraction and loses mode metadata
+const power = metrics.peakPower;
+```
+
+- Every sprint must stamp `powerMeasurementMode` with the resolved mode
+- `calibration-service.updateCalibration(athleteProfile, sprint)` is called after each sprint save **only when both `frictionCorrectedPower` and `derivedPower` are available**
+- `frictionConfidence` defaults to `'Unknown'` — never block on it
+- `'calibrated'` activates automatically once `MIN_CALIBRATION_SAMPLES` (5) are met for a surface — no user action needed
+
+---
+
+## Sprint Save — Required Fields
+
+Every sprint saved via the power profile system must write to `WorkoutEntry`:
+
+```ts
+athleteId: string | null          // null = unattached
+loadKg: number
+peakVelocity: number              // m/s — required for F-V chart
+powerMeasurementMode: PowerMeasurementMode  // resolved by resolveSprintPower()
+frictionConfidence: 'Unknown' | 'Low' | 'Medium' | 'High'  // 'Unknown' until friction detection active
+calibrationRatio: number | null   // frictionCorrectedPower / derivedPower — null if only one channel
+surfaceType: SurfaceType | null   // set from session; required for calibration keying
+pplAtTimeOfSprint: number | null
+zoneAtRecording: TrainingZone     // computed ONCE at save via classifyLoad(); never modified after
+sessionId: string | null
+```
+
+`zoneAtRecording` is **immutable after save**. Do not recalculate it on PPL revision.
+
+---
+
+## PPL Revision — Mode Is Immutable
+
+Every `PPLRevision` stores the `powerMeasurementMode` active when it was written:
+
+```ts
+type PPLRevision = {
+  pplLoadKg: number
+  peakPowerW: number
+  powerMeasurementMode: PowerMeasurementMode  // immutable after write
+  pplAsPctBW: number | null
+  ambiguousPeak: boolean
+  timestamp: number
+}
+```
+
+**PPL watt values across different modes are not numerically comparable.** A PPL of 2,100 W under `'raw'` and 2,350 W under `'friction_corrected'` represent the same athlete effort measured differently. The UI must label mode transitions in the PPL history. Never back-apply calibration ratios to revise historical PPL watt values.
+
+---
+
+## Peak Cascade (after every sprint save)
+
+```
+Sprint save (WorkoutEntry persisted)
+  → resolveSprintPower() → powerMeasurementMode stamped
+  → calibration-service.updateCalibration() (only if both channels available)
+  → power-session-store accumulates session-level peak
+  → If sprint beats AthleteProfile.historicalPeakPower:
+      → update historicalPeakPower + historicalPeakPowerLoad immediately
+      → write new PPLRevision (with powerMeasurementMode)
+      → re-evaluate CI
+      → show pb-celebration-banner (once per session)
+
+endSession()
+  → compute session aggregates (totalWorkJoules, powerTrend, zoneDistribution, etc.)
+  → PowerProfileSession saved with pplAtSessionStart + pplAtSessionEnd
+  → ppl-calculation-service re-runs
+  → AthleteProfile.currentPPL updated
+  → router.replace('/session-summary')
+```
+
+**Session summary zone bands always use `pplAtSessionStart`** — never current PPL.
+
+---
+
+## Zone Classification
+
+`zone-calculator-service.classifyLoad(loadKg, ppl): TrainingZone`
+
+| Zone | Load range |
+|---|---|
+| SPEED_STRENGTH | < 60% PPL |
+| PEAK_POWER | 80–120% PPL |
+| STRENGTH_SPEED | 140–180% PPL |
+| OVERLOAD | > 200% PPL |
+
+Called once at sprint-save time. Never call it to backfill historical records.
+
+---
+
+## CI — Peak Zone Density Quality Filter
+
+```ts
+calculatePeakZoneDensity(sessions, pplEstimate, windowDays = 90,
+  minMode: PowerMeasurementMode = 'raw'  // raise as measurement quality matures; no call-site changes needed
+)
+```
+
+Default is `'raw'` — all sprints near PPL count today. Do not change the default until friction detection is validated and calibration is established.
+
+---
+
+## Session Lifecycle Rules
+
+- `power-session-store` is MMKV-persisted. On app launch, check for `sessionId !== null && endedAt === null` → interrupted session prompt.
+- Sessions older than 48 hours (`interruptedAt` threshold) are auto-discarded silently.
+- `discardSession()` writes session to disk as `discarded: true` before clearing state.
+- Discovery Test interrupted → same mechanism; prompt copy adjusts based on `sessionMode`.
+
+---
+
+## Body Weight
+
+`AthleteProfile.bodyWeightKg: number | null`. All services must handle `null` gracefully.
+- `null` → fall back to absolute-load logic; do not throw or block
+- BW-relative tables and `pplAsPctBW` are only shown when BW is set
+- Never require BW to start a session or Discovery Test
+
+---
+
+## Key Behaviours (edge cases)
+
+- **Flat power curve** (<3% variance across loads): assign midpoint as PPL, `ambiguousPeak: true`, force CI to LOW_CONFIDENCE.
+- **No PPL established**: show no load suggestions; show Discovery Test nudge instead.
+- **Profile delete**: null out `athleteId` on sprint records; do not delete `WorkoutEntry` files.
+- **BW added for first time**: back-fill `pplAsPctBW` on all prior PPL revisions where it was null.
+- **Unattached sprints**: `athleteId = null`; never include in any athlete's CI or PPL calculation.
+- **Session resume**: pre-populate `power-session-store` from disk; Discovery Test resume restores the partial curve.
+- **Mode transition in PPL history**: display mode label alongside each PPL revision; warn against direct numerical comparison across mode changes.
+- **Calibration ratio never applied retroactively**: historical `'raw'` sprint records stay `'raw'`; ratio is only applied to future sprints on that surface.
