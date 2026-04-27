@@ -9,6 +9,7 @@ type PowerSessionState = {
   sessionId: string | null;
   athleteId: string | null;
 
+  startedAt: number | null;
   sessionMode: PowerProfileSessionMode;
   targetZone: TrainingZone | null;
   loadSuggestionsEnabled: boolean;
@@ -43,6 +44,7 @@ export const usePowerSessionStore = create<PowerSessionState>()(
       sessionId: null,
       athleteId: null,
 
+      startedAt: null,
       sessionMode: 'training',
       targetZone: null,
       loadSuggestionsEnabled: true,
@@ -64,6 +66,7 @@ export const usePowerSessionStore = create<PowerSessionState>()(
         set({
           sessionId,
           athleteId,
+          startedAt: Date.now(),
           sessionMode,
           targetZone,
           loadSuggestionsEnabled,
@@ -85,6 +88,7 @@ export const usePowerSessionStore = create<PowerSessionState>()(
         set({
           sessionId: null,
           athleteId: null,
+          startedAt: null,
           sessionMode: 'training',
           targetZone: null,
           loadSuggestionsEnabled: true,
