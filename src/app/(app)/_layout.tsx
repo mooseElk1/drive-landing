@@ -3,6 +3,7 @@ import React, { useCallback, useEffect } from 'react';
 
 import {
   Feed as FeedIcon,
+  Home as HomeIcon,
   Settings as SettingsIcon,
   Style as StyleIcon,
 } from '@/components/ui/icons';
@@ -38,6 +39,14 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => <FeedIcon color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile-setup"
+        options={{
+          title: 'Profile Setup',
+          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
         }}
       />
 
