@@ -8,7 +8,7 @@ import Reanimated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 
-import { Text, View } from '@/components/ui';
+import { Text } from '@/components/ui';
 import {
   type ExportOptions,
   useWorkoutExport,
@@ -19,6 +19,7 @@ import type { WorkoutEntry } from '@/types/workout-database';
 interface WorkoutItemProps {
   item: WorkoutEntry;
   onDelete: (item: WorkoutEntry) => Promise<void> | void;
+  onPress?: (item: WorkoutEntry) => void;
 }
 
 const DELETE_LABEL = 'Delete';
@@ -109,8 +110,9 @@ function RightAction({
   );
 }
 
-export function WorkoutItem({ item, onDelete }: WorkoutItemProps) {
+export function WorkoutItem({ item, onDelete, onPress }: WorkoutItemProps) {
   const reanimatedRef = useRef<SwipeableMethods>(null);
+  const displayName = item.name === 'Current Workout' ? 'Sprint' : item.name;
 
   // When FlashList recycles this cell for a different item, close the
   // swipeable so the recycled cell never shows stale gesture state.
@@ -130,15 +132,19 @@ export function WorkoutItem({ item, onDelete }: WorkoutItemProps) {
         />
       )}
     >
-      <View style={styles.workoutItem}>
-        <Text style={styles.workoutName}>{item.name}</Text>
+      <TouchableOpacity
+        style={styles.workoutItem}
+        onPress={() => onPress?.(item)}
+        activeOpacity={onPress ? 0.7 : 1}
+      >
+        <Text style={styles.workoutName}>{displayName}</Text>
         <Text style={styles.workoutDate}>
           {`${item.date.toLocaleDateString()} - ${item.date.toLocaleTimeString(
             'en-GB',
             { hour: '2-digit', minute: '2-digit' }
           )}`}
         </Text>
-      </View>
+      </TouchableOpacity>
     </Swipeable>
   );
 }

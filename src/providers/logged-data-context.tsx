@@ -14,7 +14,7 @@ const WINDOW_SIZE = 10;
 
 const createWorkout = (data: ProcessedSensorData) =>
   new WorkoutClass({
-    name: 'Current Workout',
+    name: 'Sprint',
     date: new Date(),
     data,
   });
@@ -109,17 +109,19 @@ export const LoggedDataProvider: React.FC<{ children: React.ReactNode }> = ({
   const getFullData = useCallback(
     () =>
       new WorkoutClass({
-        name: 'Current Workout',
+        name: 'Sprint',
         date: new Date(),
         data: fullDataRef.current,
       }),
     []
   );
 
-  const enhancedDispatch = (action: { type: string; payload?: any }) => {
+  const enhancedDispatch = (action: LoggedDataAction) => {
     switch (action.type) {
       case Constants.Reducers.AddData:
-        fullDataRef.current.addData(action.payload);
+        fullDataRef.current.addData(
+          action.payload ?? new ProcessedSensorData()
+        );
         dispatch({ ...action, fullData: fullDataRef.current });
         break;
 
@@ -171,7 +173,7 @@ export const LoggedDataProvider: React.FC<{ children: React.ReactNode }> = ({
 interface LoggedDataContextType {
   loggedData: WorkoutClass;
   fullDataSize: number;
-  dispatch: React.Dispatch<{ type: string; payload?: any }>;
+  dispatch: React.Dispatch<LoggedDataAction>;
   getFullData: () => WorkoutClass;
 }
 

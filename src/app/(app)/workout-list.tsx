@@ -207,7 +207,11 @@ export default function Workouts() {
           data={workoutData}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <WorkoutItem item={item} onDelete={handleDeleteWorkout} />
+            <WorkoutItem
+              item={item}
+              onDelete={handleDeleteWorkout}
+              onPress={() => router.push(`/sprint/${item.id}`)}
+            />
           )}
           ListEmptyComponent={<EmptyState />}
           getItemType={() => 'workout-item'}
