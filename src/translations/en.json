@@ -3,6 +3,9 @@
     "message": "Welcome to obytes app site"
   },
   "powerProfile": {
+    "common": {
+      "loading": "Loading…"
+    },
     "history": {
       "sessions": {
         "active": "Active session",
@@ -23,6 +26,15 @@
       },
       "subtitle": "Body weight is optional, but helps personalise load targets.",
       "title": "Create athlete profile"
+    },
+    "sessionDetail": {
+      "axis": {
+        "load": "Load (kg)",
+        "power": "Power (W)",
+        "velocity": "Velocity (m/s)"
+      },
+      "back": "Back",
+      "curveTitle": "Session curve"
     },
     "sessionStart": {
       "actions": {

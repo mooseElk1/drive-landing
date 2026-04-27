@@ -3,6 +3,9 @@
     "message": "مرحبا بكم في موقع تطبيق obytes"
   },
   "powerProfile": {
+    "common": {
+      "loading": "جارٍ التحميل…"
+    },
     "history": {
       "sessions": {
         "active": "جلسة نشطة",
@@ -23,6 +26,15 @@
       },
       "subtitle": "وزن الجسم اختياري، لكنه يساعد على تخصيص أهداف الأحمال.",
       "title": "إنشاء ملف رياضي"
+    },
+    "sessionDetail": {
+      "axis": {
+        "load": "الحمل (كجم)",
+        "power": "القدرة (واط)",
+        "velocity": "السرعة (م/ث)"
+      },
+      "back": "رجوع",
+      "curveTitle": "منحنى الجلسة"
     },
     "sessionStart": {
       "actions": {
