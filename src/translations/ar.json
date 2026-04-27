@@ -5,6 +5,7 @@
   "powerProfile": {
     "history": {
       "sessions": {
+        "active": "جلسة نشطة",
         "empty": "لا توجد جلسات بعد"
       },
       "tabs": {
