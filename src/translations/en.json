@@ -61,6 +61,18 @@
         "speedStrength": "Speed-Strength",
         "strengthSpeed": "Strength-Speed"
       }
+    },
+    "sprintDetail": {
+      "chartLegend": "Power (orange) + Velocity (grey)",
+      "chartTitle": "Sprint chart",
+      "metrics": {
+        "load": "Load",
+        "peakPower": "Peak power",
+        "peakVelocity": "Peak velocity",
+        "zone": "Zone"
+      },
+      "metricsTitle": "Sprint metrics",
+      "notFound": "Sprint not found"
     }
   },
   "settings": {

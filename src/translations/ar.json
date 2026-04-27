@@ -61,6 +61,18 @@
         "speedStrength": "سرعة-قوة",
         "strengthSpeed": "قوة-سرعة"
       }
+    },
+    "sprintDetail": {
+      "chartLegend": "القدرة (برتقالي) + السرعة (رمادي)",
+      "chartTitle": "مخطط الانطلاقة",
+      "metrics": {
+        "load": "الحمل",
+        "peakPower": "قدرة الذروة",
+        "peakVelocity": "سرعة الذروة",
+        "zone": "المنطقة"
+      },
+      "metricsTitle": "مقاييس الانطلاقة",
+      "notFound": "الانطلاقة غير موجودة"
     }
   },
   "settings": {
