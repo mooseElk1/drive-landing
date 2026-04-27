@@ -26,6 +26,34 @@ export interface WorkoutMetrics {
   averagePower?: number;
   /** Maximum g-force experienced */
   maxGForce?: number;
+
+  // ---------------------------------------------------------------------------
+  // Power Profile Framework (optional extensions)
+  // ---------------------------------------------------------------------------
+  /** Null = unattached sprint/workout (guest session). */
+  athleteId?: string | null;
+  /** Total sled/load at time of sprint in kg. */
+  loadKg?: number;
+  /** Session identifier grouping multiple sprints. */
+  sessionId?: string | null;
+
+  /** Resolved power measurement mode (do not compare across modes). */
+  powerMeasurementMode?: 'raw' | 'calibrated' | 'friction_corrected' | 'fused';
+  /** Friction confidence (stored now; becomes meaningful when friction detection is validated). */
+  frictionConfidence?: 'Unknown' | 'Low' | 'Medium' | 'High';
+  /** frictionCorrectedPower / derivedPower when both channels exist, else null. */
+  calibrationRatio?: number | null;
+  /** Surface type used for calibration keying. */
+  surfaceType?: 'turf' | null;
+
+  /** PPL estimate (load kg) active when sprint was recorded. */
+  pplAtTimeOfSprint?: number | null;
+  /** Zone classification at time of recording (immutable after save). */
+  zoneAtRecording?:
+    | 'SPEED_STRENGTH'
+    | 'PEAK_POWER'
+    | 'STRENGTH_SPEED'
+    | 'OVERLOAD';
 }
 
 /**

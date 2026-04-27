@@ -2,6 +2,19 @@
   "onboarding": {
     "message": "مرحبا بكم في موقع تطبيق obytes"
   },
+  "powerProfile": {
+    "profileSetup": {
+      "actions": {
+        "create": "إنشاء الملف"
+      },
+      "fields": {
+        "bodyWeightKg": "وزن الجسم (كجم) (اختياري)",
+        "name": "اسم الرياضي"
+      },
+      "subtitle": "وزن الجسم اختياري، لكنه يساعد على تخصيص أهداف الأحمال.",
+      "title": "إنشاء ملف رياضي"
+    }
+  },
   "settings": {
     "about": "حول التطبيق ",
     "acceleration": "إعدادات التسارع",

@@ -2,6 +2,19 @@
   "onboarding": {
     "message": "Welcome to obytes app site"
   },
+  "powerProfile": {
+    "profileSetup": {
+      "actions": {
+        "create": "Create profile"
+      },
+      "fields": {
+        "bodyWeightKg": "Body weight (kg) (optional)",
+        "name": "Athlete name"
+      },
+      "subtitle": "Body weight is optional, but helps personalise load targets.",
+      "title": "Create athlete profile"
+    }
+  },
   "settings": {
     "about": "About",
     "acceleration": "Acceleration Settings",
