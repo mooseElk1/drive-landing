@@ -314,6 +314,7 @@ export const persistWorkout = async (
   const metrics = { ...baseMetrics, ...(options?.metricsPatch ?? {}) };
 
   const entry = createWorkoutEntry({
+    id: workout.id,
     name: workout.name,
     type: WorkoutType.GENERAL,
     filePath,

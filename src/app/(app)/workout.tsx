@@ -80,6 +80,7 @@ function WorkoutScreen() {
   const activeAthleteId = useAthleteProfileStore((s) => s.activeAthleteId);
   const getAthleteById = useAthleteProfileStore((s) => s.getAthleteById);
   const sessionId = usePowerSessionStore((s) => s.sessionId);
+  const addSprintId = usePowerSessionStore((s) => s.addSprintId);
 
   useBufferSubscription(services.bufferService);
 
@@ -121,12 +122,14 @@ function WorkoutScreen() {
     clearError();
 
     let result: Awaited<ReturnType<typeof saveWorkout>> = null;
+    let savedWorkoutId: string | null = null;
     try {
       const workout = workoutHelper(
         data.name,
         data.data,
         services.sprintAnalysisService.getResult()
       );
+      savedWorkoutId = workout.id;
 
       const athlete = activeAthleteId ? getAthleteById(activeAthleteId) : null;
       const pplAtTimeOfSprint = athlete?.currentPPL?.pplLoadKg ?? null;
@@ -161,6 +164,9 @@ function WorkoutScreen() {
     }
 
     if (result) {
+      if (sessionId && savedWorkoutId) {
+        addSprintId(savedWorkoutId);
+      }
       showMessage({
         message: 'Workout saved',
         type: 'success',

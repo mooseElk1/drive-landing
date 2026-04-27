@@ -125,6 +125,7 @@ export interface WorkoutFile {
  * Factory function to create a new workout entry for the tracking database
  */
 export interface CreateWorkoutEntryParams {
+  id?: string;
   name: string;
   type: WorkoutType;
   filePath: string;
@@ -138,7 +139,9 @@ export function createWorkoutEntry(
   params: CreateWorkoutEntryParams
 ): WorkoutEntry {
   const now = new Date();
-  const id = `workout_${now.getTime()}_${Math.random().toString(36).substr(2, 9)}`;
+  const id =
+    params.id ??
+    `workout_${now.getTime()}_${Math.random().toString(36).substr(2, 9)}`;
 
   return {
     id,
