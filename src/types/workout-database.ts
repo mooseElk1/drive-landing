@@ -82,6 +82,11 @@ export interface WorkoutEntry {
   createdAt: Date;
   /** Date when the entry was last modified */
   updatedAt: Date;
+
+  /** Soft delete timestamp (ISO) - hidden from athlete history when set */
+  deletedAt?: string | null;
+  /** Why it was deleted (reserved for future modeling decisions) */
+  deletedReason?: 'user' | 'system' | null;
 }
 
 /**
@@ -155,6 +160,8 @@ export function createWorkoutEntry(
     tags: params.tags,
     createdAt: now,
     updatedAt: now,
+    deletedAt: null,
+    deletedReason: null,
   };
 }
 

@@ -4,12 +4,16 @@
   },
   "powerProfile": {
     "common": {
+      "cancel": "إلغاء",
+      "delete": "حذف",
       "loading": "جارٍ التحميل…"
     },
     "history": {
       "sessions": {
         "active": "جلسة نشطة",
+        "completed": "مكتملة",
         "createAthlete": "إنشاء ملف رياضي",
+        "deleteConfirm": "هل تريد حذف الجلسة وجميع انطلاقاتها من السجل؟",
         "empty": "لا توجد جلسات بعد",
         "noAthlete": "أنشئ ملف رياضي لعرض الجلسات."
       },
@@ -37,7 +41,8 @@
         "velocity": "السرعة (م/ث)"
       },
       "back": "رجوع",
-      "curveTitle": "منحنى الجلسة"
+      "curveTitle": "منحنى الجلسة",
+      "deleteSprintConfirm": "هل تريد حذف الانطلاقة؟ سيتم حذفها من السجل."
     },
     "sessionStart": {
       "actions": {

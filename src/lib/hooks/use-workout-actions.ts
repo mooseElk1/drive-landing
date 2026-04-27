@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { showMessage } from 'react-native-flash-message';
 import { create } from 'zustand';
 
@@ -5,6 +6,7 @@ import {
   deleteWorkout,
   persistWorkout,
   readWorkoutDatabase,
+  softDeleteWorkout,
 } from '@/features/workout/services/workout-persistence';
 import { type ProcessedSensorData } from '@/types/processed-sensor-data';
 import { WorkoutClass } from '@/types/workout';
@@ -20,6 +22,7 @@ interface WorkoutStore {
   fetchWorkouts: () => Promise<void>;
   addWorkout: (workout: WorkoutClass) => Promise<void>;
   deleteWorkout: (item: WorkoutEntry) => Promise<void>;
+  softDeleteWorkout: (workoutId: string) => Promise<void>;
   saveWorkout: (data: ProcessedSensorData) => Promise<void>;
   resetError: () => void;
 }
@@ -41,7 +44,13 @@ export const useWorkouts = create<WorkoutStore>((set, _) => ({
     try {
       set({ isLoading: true, isError: false });
       const storedFiles = await readWorkoutDatabase();
-      set({ workoutList: storedFiles, isLoading: false });
+      const visible: WorkoutTrackingDatabase = {
+        ...storedFiles,
+        workouts: Object.fromEntries(
+          Object.entries(storedFiles.workouts).filter(([, w]) => !w.deletedAt)
+        ),
+      };
+      set({ workoutList: visible, isLoading: false });
     } catch {
       set({ isError: true, isLoading: false });
     }
@@ -62,6 +71,22 @@ export const useWorkouts = create<WorkoutStore>((set, _) => ({
       set({ isError: false });
       const updatedWorkouts = await deleteWorkout(item);
       set({ workoutList: updatedWorkouts });
+    } catch {
+      set({ isError: true });
+    }
+  },
+
+  softDeleteWorkout: async (workoutId: string) => {
+    try {
+      set({ isError: false });
+      const updated = await softDeleteWorkout(workoutId, 'user');
+      const visible: WorkoutTrackingDatabase = {
+        ...updated,
+        workouts: Object.fromEntries(
+          Object.entries(updated.workouts).filter(([, w]) => !w.deletedAt)
+        ),
+      };
+      set({ workoutList: visible });
     } catch {
       set({ isError: true });
     }
@@ -99,6 +124,7 @@ export const useWorkoutActions = () => {
   const fetchWorkouts = useWorkouts((state) => state.fetchWorkouts);
   const addWorkout = useWorkouts((state) => state.addWorkout);
   const deleteWorkout = useWorkouts((state) => state.deleteWorkout);
+  const softDeleteWorkout = useWorkouts((state) => state.softDeleteWorkout);
   const saveWorkout = useWorkouts((state) => state.saveWorkout);
   const resetError = useWorkouts((state) => state.resetError);
 
@@ -106,6 +132,7 @@ export const useWorkoutActions = () => {
     fetchWorkouts,
     addWorkout,
     deleteWorkout,
+    softDeleteWorkout,
     saveWorkout,
     resetError,
   };

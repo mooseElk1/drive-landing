@@ -30,6 +30,7 @@ type PowerSessionState = {
   }) => void;
 
   addSprintId: (sprintId: string) => void;
+  removeSprintId: (sprintId: string) => void;
 
   setInterruptedAt: (ts: number | null) => void;
 
@@ -78,6 +79,11 @@ export const usePowerSessionStore = create<PowerSessionState>()(
 
       addSprintId: (sprintId) =>
         set((state) => ({ sprintIds: [sprintId, ...state.sprintIds] })),
+
+      removeSprintId: (sprintId) =>
+        set((state) => ({
+          sprintIds: state.sprintIds.filter((id) => id !== sprintId),
+        })),
 
       setInterruptedAt: (ts) => set({ interruptedAt: ts }),
 

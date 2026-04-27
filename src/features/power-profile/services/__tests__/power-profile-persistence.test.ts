@@ -150,6 +150,7 @@ test('saveSession persists and getSessions returns athlete sessions', async () =
     sprintIds: ['w1'],
     startedAt: 1000,
     completedAt: 2000,
+    deletedAt: null,
     testStatus: 'not_a_test',
     testMode: null,
     targetZone: null,
@@ -164,6 +165,7 @@ test('saveSession persists and getSessions returns athlete sessions', async () =
     sprintIds: ['w2'],
     startedAt: 1500,
     completedAt: null,
+    deletedAt: null,
     testStatus: 'not_a_test',
     testMode: null,
     targetZone: null,
@@ -188,6 +190,7 @@ test('getSessionsInWindow filters by startedAt cutoff', async () => {
     sprintIds: [],
     startedAt: 10_000_000 - 10 * 24 * 60 * 60 * 1000, // 10 days ago
     completedAt: null,
+    deletedAt: null,
     testStatus: 'not_a_test',
     testMode: null,
     targetZone: null,
@@ -201,6 +204,7 @@ test('getSessionsInWindow filters by startedAt cutoff', async () => {
     sprintIds: [],
     startedAt: 10_000_000 - 1 * 24 * 60 * 60 * 1000, // 1 day ago
     completedAt: null,
+    deletedAt: null,
     testStatus: 'not_a_test',
     testMode: null,
     targetZone: null,

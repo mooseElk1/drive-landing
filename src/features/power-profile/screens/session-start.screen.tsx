@@ -100,6 +100,7 @@ export function SessionStartScreen(): React.ReactElement {
       sprintIds,
       startedAt,
       completedAt: Date.now(),
+      deletedAt: null,
       testStatus: 'not_a_test',
       testMode: null,
       targetZone: targetZone ?? null,

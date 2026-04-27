@@ -185,18 +185,38 @@ export async function saveSession(session: PowerProfileSession): Promise<void> {
 }
 
 export async function getSessions(
-  athleteId: string | null
+  athleteId: string | null,
+  params?: { includeDeleted?: boolean }
 ): Promise<PowerProfileSession[]> {
   const db = await readSessionsDb();
-  return Object.values(db.sessions).filter((s) => s.athleteId === athleteId);
+  const includeDeleted = params?.includeDeleted ?? false;
+  return Object.values(db.sessions).filter(
+    (s) => s.athleteId === athleteId && (includeDeleted ? true : !s.deletedAt)
+  );
 }
 
 export async function getSessionsInWindow(
   athleteId: string | null,
-  days: number
+  days: number,
+  params?: { includeDeleted?: boolean }
 ): Promise<PowerProfileSession[]> {
   const windowMs = days * 24 * 60 * 60 * 1000;
   const cutoff = Date.now() - windowMs;
-  const all = await getSessions(athleteId);
+  const all = await getSessions(athleteId, params);
   return all.filter((s) => s.startedAt >= cutoff);
+}
+
+export async function softDeleteSession(sessionId: string): Promise<void> {
+  const db = await readSessionsDb();
+  const session = db.sessions[sessionId];
+  if (!session) return;
+  const next = {
+    ...db,
+    sessions: {
+      ...db.sessions,
+      [sessionId]: { ...session, deletedAt: Date.now() },
+    },
+    metadata: { ...db.metadata, lastUpdated: new Date().toISOString() },
+  };
+  await writeSessionsDb(next);
 }

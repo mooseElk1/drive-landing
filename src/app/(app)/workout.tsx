@@ -137,6 +137,14 @@ function WorkoutScreen() {
       });
       return;
     }
+    if (isSaving || saveInFlightRef.current) {
+      showMessage({
+        message: 'Please wait for the sprint to finish saving',
+        type: 'warning',
+        duration: 2500,
+      });
+      return;
+    }
     if (!sessionId || !startedAt) return;
 
     await saveSession({
@@ -145,6 +153,7 @@ function WorkoutScreen() {
       sprintIds,
       startedAt,
       completedAt: Date.now(),
+      deletedAt: null,
       testStatus: 'not_a_test',
       testMode: null,
       targetZone: targetZone ?? null,
@@ -348,6 +357,7 @@ function WorkoutContent({
               label="End session"
               testID="end-session"
               onPress={onEndSession}
+              disabled={isSaving}
             />
           </View>
           <SledMassTile />

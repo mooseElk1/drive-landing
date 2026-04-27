@@ -4,12 +4,16 @@
   },
   "powerProfile": {
     "common": {
+      "cancel": "Cancel",
+      "delete": "Delete",
       "loading": "Loading…"
     },
     "history": {
       "sessions": {
         "active": "Active session",
+        "completed": "Completed",
         "createAthlete": "Create athlete profile",
+        "deleteConfirm": "Delete session and its sprints from history?",
         "empty": "No sessions yet",
         "noAthlete": "Create an athlete profile to see sessions."
       },
@@ -37,7 +41,8 @@
         "velocity": "Velocity (m/s)"
       },
       "back": "Back",
-      "curveTitle": "Session curve"
+      "curveTitle": "Session curve",
+      "deleteSprintConfirm": "Delete sprint? This removes it from history."
     },
     "sessionStart": {
       "actions": {

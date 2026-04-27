@@ -342,6 +342,35 @@ export const persistWorkout = async (
   return await writeWorkoutDatabase(db);
 };
 
+export async function softDeleteWorkout(
+  workoutId: string,
+  deletedReason: 'user' | 'system' = 'user'
+): Promise<WorkoutTrackingDatabase> {
+  const db = await readWorkoutDatabase();
+  const entry = db.workouts[workoutId];
+  if (!entry) return db;
+
+  db.workouts[workoutId] = {
+    ...entry,
+    deletedAt: new Date().toISOString(),
+    deletedReason,
+    updatedAt: new Date(),
+  };
+  db.metadata.totalWorkouts = Object.keys(db.workouts).length;
+  db.metadata.lastUpdated = new Date();
+  return await writeWorkoutDatabase(db);
+}
+
+export async function getWorkoutEntries(params?: {
+  includeDeleted?: boolean;
+}): Promise<WorkoutEntry[]> {
+  const db = await readWorkoutDatabase();
+  const includeDeleted = params?.includeDeleted ?? false;
+  return Object.values(db.workouts).filter((w) =>
+    includeDeleted ? true : !w.deletedAt
+  );
+}
+
 /**
  * Delete a workout from the file system and database
  */

@@ -47,8 +47,9 @@ function sparkPath(values: number[], width: number, height: number): string {
 
 export function SprintDetailScreen(): React.ReactElement {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; sessionId?: string }>();
   const sprintId = params.id;
+  const sessionId = params.sessionId;
 
   const [state, setState] = React.useState<SprintDetailState>({
     status: 'loading',
@@ -181,7 +182,9 @@ export function SprintDetailScreen(): React.ReactElement {
       <Button
         variant="secondary"
         label={translate('powerProfile.sessionDetail.back')}
-        onPress={() => router.back()}
+        onPress={() =>
+          sessionId ? router.replace(`/session/${sessionId}`) : router.back()
+        }
       />
     </View>
   );

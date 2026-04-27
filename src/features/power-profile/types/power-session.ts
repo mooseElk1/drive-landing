@@ -12,6 +12,7 @@ export type PowerProfileSession = {
 
   startedAt: number;
   completedAt: number | null;
+  deletedAt: number | null;
 
   testStatus: 'complete' | 'incomplete' | 'not_a_test';
   testMode: 'discovery' | 'targeted_retest' | null;
