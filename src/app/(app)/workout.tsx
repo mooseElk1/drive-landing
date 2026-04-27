@@ -7,6 +7,7 @@ import { ConfigurableChart } from '@/components/configurable-chart';
 import { LiveStatTiles } from '@/components/live-stat-tiles';
 import { SledMassTile } from '@/components/sled-mass-tile';
 import {
+  Button,
   FocusAwareStatusBar,
   Pressable,
   SafeAreaView,
@@ -17,6 +18,7 @@ import {
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
 import { SessionStartScreen } from '@/features/power-profile/screens/session-start.screen';
+import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { usePowerSessionStore } from '@/features/power-profile/store/power-session-store';
@@ -86,7 +88,15 @@ function WorkoutScreen() {
   const activeAthleteId = useAthleteProfileStore((s) => s.activeAthleteId);
   const getAthleteById = useAthleteProfileStore((s) => s.getAthleteById);
   const sessionId = usePowerSessionStore((s) => s.sessionId);
+  const sessionAthleteId = usePowerSessionStore((s) => s.athleteId);
+  const startedAt = usePowerSessionStore((s) => s.startedAt);
+  const sprintIds = usePowerSessionStore((s) => s.sprintIds);
+  const targetZone = usePowerSessionStore((s) => s.targetZone);
+  const loadSuggestionsEnabled = usePowerSessionStore(
+    (s) => s.loadSuggestionsEnabled
+  );
   const addSprintId = usePowerSessionStore((s) => s.addSprintId);
+  const discardSession = usePowerSessionStore((s) => s.discardSession);
 
   useBufferSubscription(services.bufferService);
 
@@ -116,6 +126,34 @@ function WorkoutScreen() {
   const clearWorkoutData = () => {
     logWorkoutData('Clearing workout data');
     dispatch({ type: Constants.Reducers.ClearData });
+  };
+
+  const handleEndSession = async () => {
+    if (isLogging) {
+      showMessage({
+        message: 'Stop the sprint before ending the session',
+        type: 'warning',
+        duration: 2500,
+      });
+      return;
+    }
+    if (!sessionId || !startedAt) return;
+
+    await saveSession({
+      sessionId,
+      athleteId: sessionAthleteId,
+      sprintIds,
+      startedAt,
+      completedAt: Date.now(),
+      testStatus: 'not_a_test',
+      testMode: null,
+      targetZone: targetZone ?? null,
+      loadSuggestionsEnabled,
+      sessionPeakPower: null,
+      sessionPPLEstimate: null,
+    });
+
+    discardSession();
   };
 
   const handleSaveWorkout = async (data: WorkoutClass) => {
@@ -194,6 +232,7 @@ function WorkoutScreen() {
       isLogging={isLogging}
       isSaving={isSaving}
       toggleLogging={toggleLogging}
+      onEndSession={() => void handleEndSession()}
       onSave={async (data) => {
         const result = await handleSaveWorkout(data);
         if (result) saveModal.dismiss();
@@ -277,6 +316,7 @@ function WorkoutContent({
   isLogging,
   isSaving,
   toggleLogging,
+  onEndSession,
   onSave,
   onDiscard,
   saveModal,
@@ -284,6 +324,7 @@ function WorkoutContent({
   isLogging: boolean;
   isSaving: boolean;
   toggleLogging: () => void;
+  onEndSession: () => void;
   onSave: (data: WorkoutClass) => Promise<void>;
   onDiscard: () => void;
   saveModal: ReturnType<typeof useModal>;
@@ -302,6 +343,13 @@ function WorkoutContent({
           <LiveStatTiles />
           <ConfigurableChart isLogging={isLogging} />
           <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
+          <View className="mx-5 mb-2">
+            <Button
+              label="End session"
+              testID="end-session"
+              onPress={onEndSession}
+            />
+          </View>
           <SledMassTile />
         </SafeAreaView>
       </ScrollView>
