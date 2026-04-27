@@ -9,7 +9,9 @@
     "history": {
       "sessions": {
         "active": "Active session",
-        "empty": "No sessions yet"
+        "createAthlete": "Create athlete profile",
+        "empty": "No sessions yet",
+        "noAthlete": "Create an athlete profile to see sessions."
       },
       "tabs": {
         "sessions": "Sessions",
@@ -24,6 +26,7 @@
         "bodyWeightKg": "Body weight (kg) (optional)",
         "name": "Athlete name"
       },
+      "singleProfileNotice": "A profile already exists. Delete it in Settings to create a new one.",
       "subtitle": "Body weight is optional, but helps personalise load targets.",
       "title": "Create athlete profile"
     },
@@ -38,13 +41,14 @@
     },
     "sessionStart": {
       "actions": {
+        "createAthlete": "Create athlete profile",
         "end": "End session",
         "start": "Start session"
       },
       "athlete": {
-        "guest": "Guest (unattached)",
         "label": "Athlete"
       },
+      "noAthlete": "Create an athlete profile to start sessions.",
       "subtitle": "Select an athlete and optionally set a training zone.",
       "suggestions": {
         "aria": "toggle load suggestions",
@@ -82,6 +86,11 @@
     "app_name": "App Name",
     "apply_rotation": "Apply Rotation",
     "arabic": "Arabic",
+    "athlete_profile": "Athlete profile",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "delete_athlete_profile": "Delete athlete profile",
+    "delete_athlete_profile_confirm": "This will remove the athlete profile from this device.",
     "english": "English",
     "generale": "General",
     "github": "Github",

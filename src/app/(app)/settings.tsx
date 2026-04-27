@@ -1,5 +1,7 @@
 import { Env } from '@env';
+import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
+import { Alert } from 'react-native';
 
 import { BooleanSettingItem } from '@/components/settings/boolean-setting-item';
 import { Item } from '@/components/settings/item';
@@ -16,6 +18,7 @@ import {
   View,
 } from '@/components/ui';
 import { Github, Rate, Share, Support, Website } from '@/components/ui/icons';
+import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { translate, useAuth } from '@/lib';
 import {
   DEFAULT_CALCULATION_CONFIG,
@@ -189,7 +192,12 @@ function AccelerationSection() {
 }
 
 export default function Settings() {
+  const router = useRouter();
   const signOut = useAuth.use.signOut();
+  const athletes = useAthleteProfileStore((s) => s.athletes);
+  const deleteAthlete = useAthleteProfileStore((s) => s.deleteAthlete);
+
+  const activeAthlete = athletes[0] ?? null;
   return (
     <>
       <FocusAwareStatusBar />
@@ -199,6 +207,29 @@ export default function Settings() {
             {translate('settings.title')}
           </Text>
           <ItemsContainer title="settings.generale">
+            <Item
+              text="settings.athlete_profile"
+              onPress={() => router.push('/profile-setup')}
+              value={activeAthlete?.name}
+            />
+            <Item
+              text="settings.delete_athlete_profile"
+              onPress={() => {
+                if (!activeAthlete) return;
+                Alert.alert(
+                  translate('settings.delete_athlete_profile'),
+                  translate('settings.delete_athlete_profile_confirm'),
+                  [
+                    { text: translate('settings.cancel'), style: 'cancel' },
+                    {
+                      text: translate('settings.delete'),
+                      style: 'destructive',
+                      onPress: () => deleteAthlete(activeAthlete.id),
+                    },
+                  ]
+                );
+              }}
+            />
             <LanguageItem />
             <ThemeItem />
           </ItemsContainer>

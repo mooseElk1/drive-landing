@@ -1,14 +1,17 @@
-import { SplashScreen, Tabs } from 'expo-router';
+/* eslint-disable max-lines-per-function */
+import { SplashScreen, Tabs, useRouter } from 'expo-router';
 import React, { useCallback, useEffect } from 'react';
+import { Pressable } from 'react-native';
 
 import {
   Feed as FeedIcon,
-  Home as HomeIcon,
+  Profile as ProfileIcon,
   Settings as SettingsIcon,
   Style as StyleIcon,
 } from '@/components/ui/icons';
 
 export default function TabLayout() {
+  const router = useRouter();
   const hideSplash = useCallback(async () => {
     await SplashScreen.hideAsync();
   }, []);
@@ -31,6 +34,14 @@ export default function TabLayout() {
         options={{
           title: 'Workout',
           tabBarIcon: ({ color }) => <FeedIcon color={color} />,
+          headerRight: ({ tintColor }) => (
+            <Pressable
+              onPress={() => router.push('/profile-setup')}
+              hitSlop={10}
+            >
+              <ProfileIcon color={tintColor} />
+            </Pressable>
+          ),
         }}
       />
 
@@ -39,16 +50,21 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color }) => <FeedIcon color={color} />,
+          headerRight: ({ tintColor }) => (
+            <Pressable
+              onPress={() => router.push('/profile-setup')}
+              hitSlop={10}
+            >
+              <ProfileIcon color={tintColor} />
+            </Pressable>
+          ),
         }}
       />
 
-      <Tabs.Screen
-        name="profile-setup"
-        options={{
-          title: 'Profile Setup',
-          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
-        }}
-      />
+      <Tabs.Screen name="session/[id]" options={{ href: null }} />
+
+      <Tabs.Screen name="sprint/[id]" options={{ href: null }} />
+      <Tabs.Screen name="profile-setup" options={{ href: null }} />
 
       <Tabs.Screen
         name="style"

@@ -1,4 +1,5 @@
 /* eslint-disable max-lines-per-function */
+import { useRouter } from 'expo-router';
 import React from 'react';
 
 import { Button, Checkbox, Select, Text, Tile, View } from '@/components/ui';
@@ -15,6 +16,7 @@ function createSessionId(): string {
 }
 
 export function SessionStartScreen(): React.ReactElement {
+  const router = useRouter();
   const athletes = useAthleteProfileStore((s) => s.athletes);
   const activeAthleteId = useAthleteProfileStore((s) => s.activeAthleteId);
   const setActiveAthleteId = useAthleteProfileStore(
@@ -61,18 +63,12 @@ export function SessionStartScreen(): React.ReactElement {
   );
 
   const athleteOptions = React.useMemo(
-    () => [
-      {
-        label: translate('powerProfile.sessionStart.athlete.guest'),
-        value: 'guest',
-      },
-      ...athletes.map((a) => ({ label: a.name, value: a.id })),
-    ],
+    () => athletes.map((a) => ({ label: a.name, value: a.id })),
     [athletes]
   );
 
   const [selectedAthlete, setSelectedAthlete] = React.useState<string>(
-    activeAthleteId ?? 'guest'
+    activeAthleteId ?? athletes[0]?.id ?? ''
   );
   const [selectedZone, setSelectedZone] = React.useState<string | number>(
     targetZone ?? 'none'
@@ -82,12 +78,12 @@ export function SessionStartScreen(): React.ReactElement {
   );
 
   const handleStart = () => {
-    const finalAthleteId = selectedAthlete === 'guest' ? null : selectedAthlete;
-    setActiveAthleteId(finalAthleteId);
+    if (!selectedAthlete) return;
+    setActiveAthleteId(selectedAthlete);
 
     startSession({
       sessionId: createSessionId(),
-      athleteId: finalAthleteId,
+      athleteId: selectedAthlete,
       sessionMode: mode,
       targetZone:
         selectedZone === 'none' ? null : (selectedZone as TrainingZone),
@@ -126,13 +122,29 @@ export function SessionStartScreen(): React.ReactElement {
         </Text>
 
         <View className="mt-4">
-          <Select
-            label={translate('powerProfile.sessionStart.athlete.label')}
-            value={selectedAthlete}
-            options={athleteOptions}
-            onSelect={(v) => setSelectedAthlete(String(v))}
-            testID="session-athlete"
-          />
+          {athletes.length === 0 ? (
+            <View>
+              <Text className="mb-3 text-neutral-600 dark:text-neutral-300">
+                {translate('powerProfile.sessionStart.noAthlete')}
+              </Text>
+              <Button
+                label={translate(
+                  'powerProfile.sessionStart.actions.createAthlete'
+                )}
+                onPress={() => router.push('/profile-setup')}
+                testID="create-athlete-cta"
+              />
+            </View>
+          ) : (
+            <Select
+              label={translate('powerProfile.sessionStart.athlete.label')}
+              value={selectedAthlete}
+              options={athleteOptions}
+              onSelect={(v) => setSelectedAthlete(String(v))}
+              disabled
+              testID="session-athlete"
+            />
+          )}
 
           <Select
             label={translate('powerProfile.sessionStart.zone.label')}
@@ -162,6 +174,7 @@ export function SessionStartScreen(): React.ReactElement {
             label={translate('powerProfile.sessionStart.actions.start')}
             testID="start-session"
             onPress={handleStart}
+            disabled={!selectedAthlete}
           />
 
           {sessionId ? (

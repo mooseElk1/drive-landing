@@ -5,6 +5,7 @@ import React, { useCallback, useMemo } from 'react';
 
 import { EmptyState, ErrorState, LoadingState } from '@/components/helper';
 import {
+  Button,
   FocusAwareStatusBar,
   SegmentedControl,
   Text,
@@ -118,8 +119,15 @@ export default function Workouts() {
         !activeAthleteId ? (
           <Tile className="bg-white dark:bg-neutral-900">
             <Text className="text-neutral-600 dark:text-neutral-300">
-              {translate('powerProfile.history.sessions.empty')}
+              {translate('powerProfile.history.sessions.noAthlete')}
             </Text>
+            <View className="mt-3">
+              <Button
+                label={translate('powerProfile.history.sessions.createAthlete')}
+                onPress={() => router.push('/profile-setup')}
+                testID="history-create-athlete"
+              />
+            </View>
           </Tile>
         ) : sessionsLoading ? (
           <LoadingState />
@@ -146,7 +154,13 @@ export default function Workouts() {
                 ) : null}
               </Tile>
             )}
-            ListEmptyComponent={<EmptyState />}
+            ListEmptyComponent={
+              <Tile className="bg-white dark:bg-neutral-900">
+                <Text className="text-neutral-600 dark:text-neutral-300">
+                  {translate('powerProfile.history.sessions.empty')}
+                </Text>
+              </Tile>
+            }
             getItemType={() => 'session-item'}
           />
         )

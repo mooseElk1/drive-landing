@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -49,23 +50,27 @@ function createAthleteProfile(params: {
 }
 
 export function AthleteProfileSetupScreen(): React.ReactElement {
+  const router = useRouter();
   const { control, handleSubmit } = useForm<FormType>({
     resolver: zodResolver(schema),
     defaultValues: { name: '', bodyWeightKg: '' },
   });
 
+  const athletes = useAthleteProfileStore((s) => s.athletes);
   const upsertAthlete = useAthleteProfileStore((s) => s.upsertAthlete);
   const setActiveAthleteId = useAthleteProfileStore(
     (s) => s.setActiveAthleteId
   );
 
   const onSubmit = ({ name, bodyWeightKg }: FormType) => {
+    if (athletes.length > 0) return;
     const athlete = createAthleteProfile({
       name,
       bodyWeightKg: parseOptionalKg(bodyWeightKg),
     });
     upsertAthlete(athlete);
     setActiveAthleteId(athlete.id);
+    router.back();
   };
 
   return (
@@ -75,7 +80,9 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
           {translate('powerProfile.profileSetup.title')}
         </Text>
         <Text className="mt-2 text-neutral-600 dark:text-neutral-300">
-          {translate('powerProfile.profileSetup.subtitle')}
+          {athletes.length > 0
+            ? translate('powerProfile.profileSetup.singleProfileNotice')
+            : translate('powerProfile.profileSetup.subtitle')}
         </Text>
 
         <View className="mt-4">
@@ -85,6 +92,7 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
             control={control}
             testID="athlete-name"
             autoCapitalize="words"
+            editable={athletes.length === 0}
           />
 
           <ControlledInput
@@ -93,12 +101,14 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
             control={control}
             testID="athlete-bodyweight"
             keyboardType="numeric"
+            editable={athletes.length === 0}
           />
 
           <Button
             label={translate('powerProfile.profileSetup.actions.create')}
             testID="create-athlete"
             onPress={handleSubmit(onSubmit)}
+            disabled={athletes.length > 0}
           />
         </View>
       </Tile>
