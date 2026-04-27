@@ -4,3 +4,11 @@ export enum TrainingZone {
   STRENGTH_SPEED = 'STRENGTH_SPEED',
   OVERLOAD = 'OVERLOAD',
 }
+
+export type ZonePrescription = Record<
+  TrainingZone,
+  {
+    minLoadKg: number;
+    maxLoadKg: number;
+  }
+>;
