@@ -22,6 +22,34 @@
         "sprints": "الانطلاقات"
       }
     },
+    "home": {
+      "activeSession": "لديك جلسة نشطة قيد التقدم.",
+      "createProfile": "إنشاء ملف رياضي",
+      "modes": {
+        "test": "اختبار",
+        "training": "تدريب"
+      },
+      "noAthlete": "أنشئ ملف رياضي لبدء الجلسات.",
+      "resume": "استئناف الجلسة",
+      "startTraining": "بدء جلسة تدريب",
+      "subtitle": "اختر تدريب أو اختبار لبدء جلسة.",
+      "test": {
+        "description": "استخدم هذا لتحديد قدرة الذروة. سيتم تحسين القواعد لاحقًا.",
+        "start": "بدء الاختبار"
+      },
+      "title": "الرئيسية",
+      "training": {
+        "defaultFree": "الافتراضي: تدريب حر",
+        "defaultPeakPower": "الافتراضي: قوة الذروة (أفضل {{power}} واط{{loadKg}})",
+        "targetZone": "المنطقة المستهدفة",
+        "zones": {
+          "free": "تدريب حر",
+          "overload": "حمل زائد",
+          "peakPower": "قوة الذروة",
+          "strengthSpeed": "قوة-سرعة"
+        }
+      }
+    },
     "profileSetup": {
       "actions": {
         "create": "إنشاء الملف",

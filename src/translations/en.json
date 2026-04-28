@@ -22,6 +22,34 @@
         "sprints": "Sprints"
       }
     },
+    "home": {
+      "activeSession": "You have an active session in progress.",
+      "createProfile": "Create athlete profile",
+      "modes": {
+        "test": "Test",
+        "training": "Training"
+      },
+      "noAthlete": "Create an athlete profile to start sessions.",
+      "resume": "Resume session",
+      "startTraining": "Start training session",
+      "subtitle": "Choose Training or Test to begin a session.",
+      "test": {
+        "description": "Use this to establish peak power. Rules will be refined later.",
+        "start": "Start test"
+      },
+      "title": "Home",
+      "training": {
+        "defaultFree": "Default: Free training",
+        "defaultPeakPower": "Default: Peak Power (PB {{power}} W{{loadKg}})",
+        "targetZone": "Target zone",
+        "zones": {
+          "free": "Free training",
+          "overload": "Overload",
+          "peakPower": "Peak Power",
+          "strengthSpeed": "Strength-Speed"
+        }
+      }
+    },
     "profileSetup": {
       "actions": {
         "create": "Create profile",

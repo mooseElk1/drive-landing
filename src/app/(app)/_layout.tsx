@@ -6,6 +6,7 @@ import { Pressable } from 'react-native';
 import {
   Edit as EditIcon,
   Feed as FeedIcon,
+  Home as HomeIcon,
   Profile as ProfileIcon,
   Settings as SettingsIcon,
 } from '@/components/ui/icons';
@@ -29,6 +30,21 @@ export default function TabLayout() {
         name="index"
         options={{
           href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
+          headerRight: ({ tintColor }) => (
+            <Pressable
+              onPress={() => router.push('/profile-setup')}
+              hitSlop={10}
+            >
+              <ProfileIcon color={tintColor} />
+            </Pressable>
+          ),
         }}
       />
       <Tabs.Screen

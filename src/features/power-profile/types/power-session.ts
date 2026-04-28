@@ -2,6 +2,7 @@ import type { TrainingZone } from './training-zones';
 
 export type PowerProfileSessionMode =
   | 'training'
+  | 'test'
   | 'discovery'
   | 'targeted_retest';
 

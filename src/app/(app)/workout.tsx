@@ -17,11 +17,11 @@ import {
 } from '@/components/ui';
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
-import { SessionStartScreen } from '@/features/power-profile/screens/session-start.screen';
 import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { usePowerSessionStore } from '@/features/power-profile/store/power-session-store';
+import type { PowerProfileSessionMode } from '@/features/power-profile/types/power-session';
 import { workoutHelper } from '@/features/workout/helpers/workout-helper';
 import {
   useWorkoutServices,
@@ -32,6 +32,10 @@ import { useLoggedData } from '@/providers';
 import { logWorkoutData } from '@/services/logger';
 import { useCalculationConfigStore } from '@/store/calculation-config';
 import { type WorkoutClass } from '@/types/workout';
+
+function createSessionId(): string {
+  return `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
 
 function StartStopButton({
   isLogging,
@@ -61,11 +65,6 @@ function StartStopButton({
 }
 
 export default function Workout() {
-  const sessionId = usePowerSessionStore((s) => s.sessionId);
-  if (!sessionId) {
-    return <SessionStartScreen />;
-  }
-
   return (
     <WorkoutServicesProvider>
       <WorkoutScreen />
@@ -86,6 +85,10 @@ function WorkoutScreen() {
 
   const massKg = useCalculationConfigStore((s) => s.config.mass);
   const activeAthleteId = useAthleteProfileStore((s) => s.activeAthleteId);
+  const athletes = useAthleteProfileStore((s) => s.athletes);
+  const setActiveAthleteId = useAthleteProfileStore(
+    (s) => s.setActiveAthleteId
+  );
   const getAthleteById = useAthleteProfileStore((s) => s.getAthleteById);
   const sessionId = usePowerSessionStore((s) => s.sessionId);
   const sessionAthleteId = usePowerSessionStore((s) => s.athleteId);
@@ -97,10 +100,36 @@ function WorkoutScreen() {
   );
   const addSprintId = usePowerSessionStore((s) => s.addSprintId);
   const discardSession = usePowerSessionStore((s) => s.discardSession);
+  const startSession = usePowerSessionStore((s) => s.startSession);
 
   useBufferSubscription(services.bufferService);
 
+  const ensureDefaultSession = () => {
+    if (sessionId) return true;
+    const athleteId = activeAthleteId ?? athletes[0]?.id ?? null;
+    if (!athleteId) {
+      showMessage({
+        message: 'Create an athlete profile to start',
+        type: 'warning',
+        duration: 2500,
+      });
+      return false;
+    }
+    if (!activeAthleteId) setActiveAthleteId(athleteId);
+
+    const sessionMode: PowerProfileSessionMode = 'training';
+    startSession({
+      sessionId: createSessionId(),
+      athleteId,
+      sessionMode,
+      targetZone: null,
+      loadSuggestionsEnabled: false,
+    });
+    return true;
+  };
+
   const handleStart = () => {
+    if (!ensureDefaultSession()) return;
     clearWorkoutData();
     const nextServices = services.resetServices();
     nextServices.sprintAnalysisService.startSprint();
