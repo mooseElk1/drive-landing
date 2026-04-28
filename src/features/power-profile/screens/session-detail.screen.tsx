@@ -11,16 +11,23 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import { Button, ScrollView, Text, Tile, View } from '@/components/ui';
+import colors from '@/components/ui/colors';
+import {
+  type ChartPoint,
+  LoadVelocityChart,
+} from '@/features/power-profile/components/load-velocity-chart';
+import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
+import { TrainingZone } from '@/features/power-profile/types/training-zones';
 import { readWorkoutDatabase } from '@/features/workout/services/workout-persistence';
 import { useWorkoutActions } from '@/lib/hooks/use-workout-actions';
 import { translate } from '@/lib/i18n/utils';
 import type { WorkoutEntry } from '@/types/workout-database';
 
-import { PvScatterPlot } from '../components/pv-scatter-plot';
 import {
   readSessionsDb,
   saveSession,
 } from '../services/power-profile-persistence';
+import { classifyLoad } from '../services/zone-calculator-service';
 import { usePowerSessionStore } from '../store/power-session-store';
 
 type SessionDetailState =
@@ -29,6 +36,7 @@ type SessionDetailState =
   | {
       status: 'ready';
       sessionId: string;
+      athleteId: string | null;
       startedAt: number;
       sprintEntries: WorkoutEntry[];
       sessionPeakPower: number | null;
@@ -42,9 +50,11 @@ export function SessionDetailScreen(): React.ReactElement {
   const sessionId = params.id;
 
   const { softDeleteWorkout } = useWorkoutActions();
+  const getAthleteById = useAthleteProfileStore((s) => s.getAthleteById);
   const activeSessionId = usePowerSessionStore((s) => s.sessionId);
   const activeStartedAt = usePowerSessionStore((s) => s.startedAt);
   const activeSprintIds = usePowerSessionStore((s) => s.sprintIds);
+  const activeAthleteId = usePowerSessionStore((s) => s.athleteId);
   const activeSessionPeakPower = usePowerSessionStore(
     (s) => s.sessionPeakPower
   );
@@ -59,6 +69,9 @@ export function SessionDetailScreen(): React.ReactElement {
   const [state, setState] = React.useState<SessionDetailState>({
     status: 'loading',
   });
+  const [selectedSprintId, setSelectedSprintId] = React.useState<string | null>(
+    null
+  );
 
   React.useEffect(() => {
     let cancelled = false;
@@ -78,6 +91,11 @@ export function SessionDetailScreen(): React.ReactElement {
         ? session.startedAt
         : isActiveFromStore
           ? activeStartedAt
+          : null;
+      const athleteId = session
+        ? (session.athleteId ?? null)
+        : isActiveFromStore
+          ? (activeAthleteId ?? null)
           : null;
 
       if (!sprintIds || !startedAt) {
@@ -114,6 +132,7 @@ export function SessionDetailScreen(): React.ReactElement {
       setState({
         status: 'ready',
         sessionId: sessionId,
+        athleteId,
         startedAt: startedAt,
         sprintEntries: entries,
         sessionPeakPower: peakPower,
@@ -130,9 +149,11 @@ export function SessionDetailScreen(): React.ReactElement {
     activeSessionId,
     activeStartedAt,
     activeSprintIds,
+    activeAthleteId,
     activeSessionPeakPower,
     activeSessionPeakVelocity,
     activeSessionPeakPowerLoad,
+    getAthleteById,
   ]);
 
   if (state.status === 'loading') {
@@ -155,11 +176,22 @@ export function SessionDetailScreen(): React.ReactElement {
     );
   }
 
-  const points = state.sprintEntries.map((e) => ({
-    loadKg: e.metrics?.loadKg ?? 0,
-    peakPowerW: e.metrics?.peakPower ?? null,
-    peakVelocity: e.metrics?.peakVelocity ?? null,
-  }));
+  const athlete = state.athleteId ? getAthleteById(state.athleteId) : null;
+  const pplLoadKg = athlete?.currentPPL?.pplLoadKg ?? 0;
+  const pplPeakPowerW = athlete?.currentPPL?.peakPowerW ?? 0;
+
+  const points: ChartPoint[] = state.sprintEntries.map((e) => {
+    const loadKg = e.metrics?.loadKg ?? 0;
+    const zoneName =
+      pplLoadKg > 0 ? zoneNameForLoad(loadKg, pplLoadKg) : undefined;
+    return {
+      id: e.id,
+      loadKg,
+      peakPowerW: e.metrics?.peakPower ?? null,
+      peakVelocity: e.metrics?.peakVelocity ?? null,
+      zoneName,
+    };
+  });
 
   return (
     <ScrollView
@@ -224,14 +256,20 @@ export function SessionDetailScreen(): React.ReactElement {
         <Text className="mb-2 text-base font-semibold">
           {translate('powerProfile.sessionDetail.curveTitle')}
         </Text>
-        <PvScatterPlot
-          points={points}
+        <LoadVelocityChart
           width={340}
-          height={220}
-          yLabelPower={translate('powerProfile.sessionDetail.axis.power')}
-          yLabelVelocity={translate('powerProfile.sessionDetail.axis.velocity')}
-          xLabelLoad={translate('powerProfile.sessionDetail.axis.load')}
+          height={240}
+          pplLoadKg={pplLoadKg}
+          peakPowerW={pplPeakPowerW}
+          points={points}
+          selectedPointId={selectedSprintId}
+          onPointPress={setSelectedSprintId}
         />
+        {pplLoadKg <= 0 ? (
+          <Text className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+            {'Establish PPL to see training zones'}
+          </Text>
+        ) : null}
       </Tile>
 
       <View className="mt-3">
@@ -239,7 +277,14 @@ export function SessionDetailScreen(): React.ReactElement {
           <SprintSwipeRow
             key={e.id}
             entry={e}
-            onPress={() =>
+            selected={selectedSprintId === e.id}
+            selectedColor={
+              pplLoadKg > 0
+                ? zoneAccentColorForLoad(e.metrics?.loadKg ?? 0, pplLoadKg)
+                : colors.primary[400]
+            }
+            onPress={() => setSelectedSprintId(e.id)}
+            onLongPress={() =>
               router.push(`/sprint/${e.id}?sessionId=${state.sessionId}`)
             }
             onDelete={async () => {
@@ -272,11 +317,17 @@ export function SessionDetailScreen(): React.ReactElement {
 function SprintSwipeRow({
   entry,
   onPress,
+  onLongPress,
   onDelete,
+  selected,
+  selectedColor,
 }: {
   entry: WorkoutEntry;
   onPress: () => void;
+  onLongPress: () => void;
   onDelete: () => Promise<void> | void;
+  selected: boolean;
+  selectedColor: string;
 }) {
   const swipeableRef = React.useRef<SwipeableMethods>(null);
 
@@ -297,7 +348,15 @@ function SprintSwipeRow({
         />
       )}
     >
-      <TouchableOpacity style={styles.row} onPress={onPress}>
+      <TouchableOpacity
+        style={[
+          styles.row,
+          selected ? styles.rowSelected : null,
+          selected ? { borderColor: selectedColor } : null,
+        ]}
+        onPress={onPress}
+        onLongPress={onLongPress}
+      >
         <Text className="text-base font-semibold">{entry.name}</Text>
         <Text className="text-neutral-600 dark:text-neutral-300">
           {entry.date.toLocaleString()}
@@ -308,6 +367,34 @@ function SprintSwipeRow({
       </TouchableOpacity>
     </Swipeable>
   );
+}
+
+function zoneNameForLoad(loadKg: number, pplLoadKg: number): string {
+  const zone = classifyLoad(loadKg, pplLoadKg);
+  switch (zone) {
+    case TrainingZone.SPEED_STRENGTH:
+      return 'Speed-Strength';
+    case TrainingZone.PEAK_POWER:
+      return 'Peak Power';
+    case TrainingZone.STRENGTH_SPEED:
+      return 'Strength-Speed';
+    case TrainingZone.OVERLOAD:
+      return 'Overload';
+  }
+}
+
+function zoneAccentColorForLoad(loadKg: number, pplLoadKg: number): string {
+  const zone = classifyLoad(loadKg, pplLoadKg);
+  switch (zone) {
+    case TrainingZone.SPEED_STRENGTH:
+      return colors.secondary[500];
+    case TrainingZone.PEAK_POWER:
+      return colors.primary[400];
+    case TrainingZone.STRENGTH_SPEED:
+      return colors.purple[500];
+    case TrainingZone.OVERLOAD:
+      return colors.danger[500];
+  }
 }
 
 function RightAction({
@@ -337,6 +424,13 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    borderRadius: 14,
+    marginBottom: 10,
+  },
+  rowSelected: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   rightActions: {
     flexDirection: 'row',
