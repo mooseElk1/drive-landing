@@ -105,6 +105,9 @@ function WorkoutScreen() {
   const sessionPeakVelocity = usePowerSessionStore(
     (s) => s.sessionPeakVelocity
   );
+  const sessionPeakPowerLoad = usePowerSessionStore(
+    (s) => s.sessionPeakPowerLoad
+  );
   const discardSession = usePowerSessionStore((s) => s.discardSession);
   const startSession = usePowerSessionStore((s) => s.startSession);
   const updateHistoricalPeak = useAthleteProfileStore(
@@ -198,6 +201,7 @@ function WorkoutScreen() {
       loadSuggestionsEnabled,
       sessionPeakPower,
       sessionPeakVelocity,
+      sessionPeakPowerLoad,
       sessionPPLEstimate: null,
     });
 
@@ -209,7 +213,7 @@ function WorkoutScreen() {
     peakVelocity: number,
     loadKg: number
   ) => {
-    updateSessionPeaks(peakPower, peakVelocity);
+    updateSessionPeaks(peakPower, peakVelocity, loadKg);
     if (activeAthleteId) {
       updateHistoricalPeak(activeAthleteId, peakPower, loadKg);
     }

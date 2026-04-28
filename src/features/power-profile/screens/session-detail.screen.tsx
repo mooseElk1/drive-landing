@@ -33,6 +33,7 @@ type SessionDetailState =
       sprintEntries: WorkoutEntry[];
       sessionPeakPower: number | null;
       sessionPeakVelocity: number | null;
+      sessionPeakPowerLoad: number | null;
     };
 
 export function SessionDetailScreen(): React.ReactElement {
@@ -49,6 +50,9 @@ export function SessionDetailScreen(): React.ReactElement {
   );
   const activeSessionPeakVelocity = usePowerSessionStore(
     (s) => s.sessionPeakVelocity
+  );
+  const activeSessionPeakPowerLoad = usePowerSessionStore(
+    (s) => s.sessionPeakPowerLoad
   );
   const removeSprintId = usePowerSessionStore((s) => s.removeSprintId);
 
@@ -101,6 +105,10 @@ export function SessionDetailScreen(): React.ReactElement {
         (entries.length > 0
           ? Math.max(...entries.map((e) => e.metrics?.peakVelocity ?? 0))
           : null);
+      const peakPowerLoad =
+        session?.sessionPeakPowerLoad ??
+        (isActiveFromStore ? activeSessionPeakPowerLoad : null) ??
+        null;
 
       if (cancelled) return;
       setState({
@@ -110,6 +118,7 @@ export function SessionDetailScreen(): React.ReactElement {
         sprintEntries: entries,
         sessionPeakPower: peakPower,
         sessionPeakVelocity: peakVelocity,
+        sessionPeakPowerLoad: peakPowerLoad,
       });
     }
     void run();
@@ -123,6 +132,7 @@ export function SessionDetailScreen(): React.ReactElement {
     activeSprintIds,
     activeSessionPeakPower,
     activeSessionPeakVelocity,
+    activeSessionPeakPowerLoad,
   ]);
 
   if (state.status === 'loading') {
@@ -192,6 +202,20 @@ export function SessionDetailScreen(): React.ReactElement {
           </Text>
           <Text className="text-xs text-neutral-400 dark:text-neutral-500">
             {'m/s'}
+          </Text>
+        </Tile>
+
+        <Tile variant="stat" className="bg-white dark:bg-neutral-900">
+          <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+            {'Peak Load'}
+          </Text>
+          <Text className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            {state.sessionPeakPowerLoad != null
+              ? state.sessionPeakPowerLoad.toString()
+              : '--'}
+          </Text>
+          <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+            {'kg'}
           </Text>
         </Tile>
       </View>

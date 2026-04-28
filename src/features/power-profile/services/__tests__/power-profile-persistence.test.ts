@@ -157,6 +157,7 @@ test('saveSession persists and getSessions returns athlete sessions', async () =
     loadSuggestionsEnabled: true,
     sessionPeakPower: null,
     sessionPeakVelocity: null,
+    sessionPeakPowerLoad: null,
     sessionPPLEstimate: null,
   });
 
@@ -173,6 +174,7 @@ test('saveSession persists and getSessions returns athlete sessions', async () =
     loadSuggestionsEnabled: true,
     sessionPeakPower: null,
     sessionPeakVelocity: null,
+    sessionPeakPowerLoad: null,
     sessionPPLEstimate: null,
   });
 
@@ -199,6 +201,7 @@ test('getSessionsInWindow filters by startedAt cutoff', async () => {
     loadSuggestionsEnabled: true,
     sessionPeakPower: null,
     sessionPeakVelocity: null,
+    sessionPeakPowerLoad: null,
     sessionPPLEstimate: null,
   });
   await saveSession({
@@ -214,6 +217,7 @@ test('getSessionsInWindow filters by startedAt cutoff', async () => {
     loadSuggestionsEnabled: true,
     sessionPeakPower: null,
     sessionPeakVelocity: null,
+    sessionPeakPowerLoad: null,
     sessionPPLEstimate: null,
   });
 

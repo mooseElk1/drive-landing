@@ -52,6 +52,9 @@ export default function Workouts() {
   const activeSessionPeakVelocity = usePowerSessionStore(
     (s) => s.sessionPeakVelocity
   );
+  const activeSessionPeakPowerLoad = usePowerSessionStore(
+    (s) => s.sessionPeakPowerLoad
+  );
 
   const [historyMode, setHistoryMode] = React.useState<'sessions' | 'sprints'>(
     'sessions'
@@ -179,6 +182,9 @@ export default function Workouts() {
                         activeSessionPeakVelocity != null
                           ? `${activeSessionPeakVelocity.toFixed(2)} m/s`
                           : null,
+                        activeSessionPeakPowerLoad != null
+                          ? `${activeSessionPeakPowerLoad} kg`
+                          : null,
                       ]
                         .filter(Boolean)
                         .join(' · ')}
@@ -286,6 +292,9 @@ function SessionSwipeRow({
                 : null,
               item.sessionPeakVelocity != null
                 ? `${item.sessionPeakVelocity.toFixed(2)} m/s`
+                : null,
+              item.sessionPeakPowerLoad != null
+                ? `${item.sessionPeakPowerLoad} kg`
                 : null,
             ]
               .filter(Boolean)

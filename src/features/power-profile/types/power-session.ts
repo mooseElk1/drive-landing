@@ -24,5 +24,6 @@ export type PowerProfileSession = {
 
   sessionPeakPower: number | null;
   sessionPeakVelocity: number | null;
+  sessionPeakPowerLoad: number | null;
   sessionPPLEstimate: number | null;
 };

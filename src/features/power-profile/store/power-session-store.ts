@@ -18,6 +18,7 @@ type PowerSessionState = {
 
   sessionPeakPower: number | null;
   sessionPeakVelocity: number | null;
+  sessionPeakPowerLoad: number | null;
 
   historicalPBBeatenThisSession: boolean;
 
@@ -35,7 +36,11 @@ type PowerSessionState = {
   addSprintId: (sprintId: string) => void;
   removeSprintId: (sprintId: string) => void;
 
-  updateSessionPeaks: (peakPower: number, peakVelocity: number) => void;
+  updateSessionPeaks: (
+    peakPower: number,
+    peakVelocity: number,
+    loadKg: number
+  ) => void;
 
   setInterruptedAt: (ts: number | null) => void;
 
@@ -60,6 +65,7 @@ export const usePowerSessionStore = create<PowerSessionState>()(
 
       sessionPeakPower: null,
       sessionPeakVelocity: null,
+      sessionPeakPowerLoad: null,
 
       historicalPBBeatenThisSession: false,
 
@@ -83,6 +89,7 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sprintIds: [],
           sessionPeakPower: null,
           sessionPeakVelocity: null,
+          sessionPeakPowerLoad: null,
           historicalPBBeatenThisSession: false,
           interruptedAt: null,
           endedAt: null,
@@ -96,17 +103,24 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sprintIds: state.sprintIds.filter((id) => id !== sprintId),
         })),
 
-      updateSessionPeaks: (peakPower, peakVelocity) =>
-        set((state) => ({
-          sessionPeakPower:
-            state.sessionPeakPower === null
+      updateSessionPeaks: (peakPower, peakVelocity, loadKg) =>
+        set((state) => {
+          const isNewPeakPower =
+            state.sessionPeakPower === null ||
+            peakPower > state.sessionPeakPower;
+          return {
+            sessionPeakPower: isNewPeakPower
               ? peakPower
-              : Math.max(state.sessionPeakPower, peakPower),
-          sessionPeakVelocity:
-            state.sessionPeakVelocity === null
-              ? peakVelocity
-              : Math.max(state.sessionPeakVelocity, peakVelocity),
-        })),
+              : state.sessionPeakPower,
+            sessionPeakPowerLoad: isNewPeakPower
+              ? loadKg
+              : state.sessionPeakPowerLoad,
+            sessionPeakVelocity:
+              state.sessionPeakVelocity === null
+                ? peakVelocity
+                : Math.max(state.sessionPeakVelocity, peakVelocity),
+          };
+        }),
 
       setInterruptedAt: (ts) => set({ interruptedAt: ts }),
 
@@ -124,6 +138,7 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sprintIds: [],
           sessionPeakPower: null,
           sessionPeakVelocity: null,
+          sessionPeakPowerLoad: null,
           historicalPBBeatenThisSession: false,
           interruptedAt: null,
           endedAt: null,

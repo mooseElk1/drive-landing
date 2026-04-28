@@ -144,6 +144,21 @@ export function WorkoutItem({ item, onDelete, onPress }: WorkoutItemProps) {
             { hour: '2-digit', minute: '2-digit' }
           )}`}
         </Text>
+        {item.metrics != null ? (
+          <Text style={styles.workoutMetrics}>
+            {[
+              item.metrics.peakPower != null
+                ? `${Math.round(item.metrics.peakPower)} W`
+                : null,
+              item.metrics.peakVelocity != null
+                ? `${item.metrics.peakVelocity.toFixed(2)} m/s`
+                : null,
+              item.metrics.loadKg != null ? `${item.metrics.loadKg} kg` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        ) : null}
       </TouchableOpacity>
     </Swipeable>
   );
@@ -162,6 +177,11 @@ const styles = StyleSheet.create({
   workoutDate: {
     fontSize: 14,
     color: '#666',
+  },
+  workoutMetrics: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
   },
   rightActions: {
     flexDirection: 'row',
