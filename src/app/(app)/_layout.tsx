@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/icons';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 
+const headerIconButtonStyle = { marginRight: 12 } as const;
+
 export default function TabLayout() {
   const router = useRouter();
   const hasAthlete = useAthleteProfileStore((s) => s.athletes.length > 0);
@@ -41,6 +43,7 @@ export default function TabLayout() {
             <Pressable
               onPress={() => router.push('/profile-setup')}
               hitSlop={10}
+              style={headerIconButtonStyle}
             >
               <ProfileIcon color={tintColor} />
             </Pressable>
@@ -56,6 +59,7 @@ export default function TabLayout() {
             <Pressable
               onPress={() => router.push('/profile-setup')}
               hitSlop={10}
+              style={headerIconButtonStyle}
             >
               <ProfileIcon color={tintColor} />
             </Pressable>
@@ -72,6 +76,7 @@ export default function TabLayout() {
             <Pressable
               onPress={() => router.push('/profile-setup')}
               hitSlop={10}
+              style={headerIconButtonStyle}
             >
               <ProfileIcon color={tintColor} />
             </Pressable>
@@ -92,6 +97,7 @@ export default function TabLayout() {
               <Pressable
                 onPress={() => router.push('/profile-edit')}
                 hitSlop={10}
+                style={headerIconButtonStyle}
               >
                 <EditIcon color={tintColor} />
               </Pressable>
