@@ -135,6 +135,7 @@ function TrainingForm({
         value={selectedZone}
         options={zoneOptions}
         onSelect={(v) => setSelectedZone(v)}
+        presentation="dropdown"
         testID="home-zone"
       />
 

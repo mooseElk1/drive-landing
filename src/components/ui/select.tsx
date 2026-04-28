@@ -144,10 +144,10 @@ export interface SelectProps {
   onSelect?: (value: string | number) => void;
   placeholder?: string;
   testID?: string;
+  presentation?: 'sheet' | 'dropdown';
 }
 interface ControlledSelectProps<T extends FieldValues>
-  extends SelectProps,
-    InputControllerType<T> {}
+  extends SelectProps, InputControllerType<T> {}
 
 export const Select = (props: SelectProps) => {
   const {
@@ -159,15 +159,18 @@ export const Select = (props: SelectProps) => {
     disabled = false,
     onSelect,
     testID,
+    presentation = 'sheet',
   } = props;
   const modal = useModal();
+  const [open, setOpen] = React.useState(false);
 
   const onSelectOption = React.useCallback(
     (option: OptionType) => {
       onSelect?.(option.value);
-      modal.dismiss();
+      if (presentation === 'sheet') modal.dismiss();
+      setOpen(false);
     },
-    [modal, onSelect]
+    [modal, onSelect, presentation]
   );
 
   const styles = React.useMemo(
@@ -201,7 +204,13 @@ export const Select = (props: SelectProps) => {
         <Pressable
           className={styles.input()}
           disabled={disabled}
-          onPress={modal.present}
+          onPress={() => {
+            if (presentation === 'sheet') {
+              modal.present();
+              return;
+            }
+            setOpen((v) => !v);
+          }}
           testID={testID ? `${testID}-trigger` : undefined}
         >
           <View className="flex-1">
@@ -217,13 +226,40 @@ export const Select = (props: SelectProps) => {
             {error}
           </Text>
         )}
+
+        {presentation === 'dropdown' && open ? (
+          <View
+            className="mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800"
+            testID={testID ? `${testID}-dropdown` : undefined}
+          >
+            {options.map((opt, idx) => (
+              <Pressable
+                key={keyExtractor(opt)}
+                onPress={() => onSelectOption(opt)}
+                className={`flex-row items-center p-3 ${
+                  idx < options.length - 1
+                    ? 'border-b border-neutral-200 dark:border-neutral-700'
+                    : ''
+                }`}
+                testID={testID ? `${testID}-item-${opt.value}` : undefined}
+              >
+                <Text className="flex-1 dark:text-neutral-100">
+                  {opt.label}
+                </Text>
+                {value === opt.value ? <Check /> : null}
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
-      <Options
-        testID={testID}
-        ref={modal.ref}
-        options={options}
-        onSelect={onSelectOption}
-      />
+      {presentation === 'sheet' ? (
+        <Options
+          testID={testID}
+          ref={modal.ref}
+          options={options}
+          onSelect={onSelectOption}
+        />
+      ) : null}
     </>
   );
 };
