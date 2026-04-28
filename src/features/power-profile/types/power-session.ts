@@ -23,5 +23,6 @@ export type PowerProfileSession = {
   loadSuggestionsEnabled: boolean;
 
   sessionPeakPower: number | null;
+  sessionPeakVelocity: number | null;
   sessionPPLEstimate: number | null;
 };

@@ -164,6 +164,42 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
             {translate('powerProfile.profileSetup.powerProfile.title')}
           </Text>
 
+          {athlete.historicalPeakPower !== null ? (
+            <View className="mt-3 flex-row gap-3">
+              <Tile
+                variant="stat"
+                className="bg-neutral-100 dark:bg-charcoal-900"
+              >
+                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                  {'All-Time Peak'}
+                </Text>
+                <Text className="text-2xl font-bold text-primary-400">
+                  {Math.round(athlete.historicalPeakPower).toString()}
+                </Text>
+                <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+                  {'W'}
+                </Text>
+              </Tile>
+
+              {athlete.historicalPeakPowerLoad !== null ? (
+                <Tile
+                  variant="stat"
+                  className="bg-neutral-100 dark:bg-charcoal-900"
+                >
+                  <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                    {'At Load'}
+                  </Text>
+                  <Text className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                    {athlete.historicalPeakPowerLoad.toFixed(1)}
+                  </Text>
+                  <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+                    {'kg'}
+                  </Text>
+                </Tile>
+              ) : null}
+            </View>
+          ) : null}
+
           {athlete.currentPPL ? (
             <View className="mt-3">
               <View className="flex-row items-center justify-between">

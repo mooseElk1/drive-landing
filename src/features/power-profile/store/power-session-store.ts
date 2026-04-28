@@ -16,6 +16,9 @@ type PowerSessionState = {
 
   sprintIds: string[];
 
+  sessionPeakPower: number | null;
+  sessionPeakVelocity: number | null;
+
   historicalPBBeatenThisSession: boolean;
 
   interruptedAt: number | null;
@@ -32,6 +35,8 @@ type PowerSessionState = {
   addSprintId: (sprintId: string) => void;
   removeSprintId: (sprintId: string) => void;
 
+  updateSessionPeaks: (peakPower: number, peakVelocity: number) => void;
+
   setInterruptedAt: (ts: number | null) => void;
 
   endSession: (endedAt?: number) => void;
@@ -41,6 +46,7 @@ type PowerSessionState = {
 
 export const usePowerSessionStore = create<PowerSessionState>()(
   persist(
+    // eslint-disable-next-line max-lines-per-function
     (set) => ({
       sessionId: null,
       athleteId: null,
@@ -51,6 +57,9 @@ export const usePowerSessionStore = create<PowerSessionState>()(
       loadSuggestionsEnabled: true,
 
       sprintIds: [],
+
+      sessionPeakPower: null,
+      sessionPeakVelocity: null,
 
       historicalPBBeatenThisSession: false,
 
@@ -72,6 +81,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           targetZone,
           loadSuggestionsEnabled,
           sprintIds: [],
+          sessionPeakPower: null,
+          sessionPeakVelocity: null,
           historicalPBBeatenThisSession: false,
           interruptedAt: null,
           endedAt: null,
@@ -83,6 +94,18 @@ export const usePowerSessionStore = create<PowerSessionState>()(
       removeSprintId: (sprintId) =>
         set((state) => ({
           sprintIds: state.sprintIds.filter((id) => id !== sprintId),
+        })),
+
+      updateSessionPeaks: (peakPower, peakVelocity) =>
+        set((state) => ({
+          sessionPeakPower:
+            state.sessionPeakPower === null
+              ? peakPower
+              : Math.max(state.sessionPeakPower, peakPower),
+          sessionPeakVelocity:
+            state.sessionPeakVelocity === null
+              ? peakVelocity
+              : Math.max(state.sessionPeakVelocity, peakVelocity),
         })),
 
       setInterruptedAt: (ts) => set({ interruptedAt: ts }),
@@ -99,6 +122,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           targetZone: null,
           loadSuggestionsEnabled: true,
           sprintIds: [],
+          sessionPeakPower: null,
+          sessionPeakVelocity: null,
           historicalPBBeatenThisSession: false,
           interruptedAt: null,
           endedAt: null,

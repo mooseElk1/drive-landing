@@ -4,8 +4,11 @@ const React = require('react');
 
 const NOOP = () => {};
 
-const BottomSheetModalProvider = ({ children }: { children: React.ReactNode }) =>
-  children;
+const BottomSheetModalProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => children;
 
 const BottomSheetBackdrop = NOOP;
 
@@ -78,11 +81,8 @@ const useBottomSheetDynamicSnapPoints = (
 
 const BottomSheetFlatList = ({ children }: { children?: React.ReactNode }) =>
   children ?? null;
-const BottomSheetScrollView = ({
-  children,
-}: {
-  children?: React.ReactNode;
-}) => children ?? null;
+const BottomSheetScrollView = ({ children }: { children?: React.ReactNode }) =>
+  children ?? null;
 const BottomSheetView = ({ children }: { children?: React.ReactNode }) =>
   children ?? null;
 const BottomSheetTextInput = NOOP;

@@ -46,6 +46,12 @@ export default function Workouts() {
   const sessionId = usePowerSessionStore((s) => s.sessionId);
   const sessionStartedAt = usePowerSessionStore((s) => s.startedAt);
   const sessionSprintIds = usePowerSessionStore((s) => s.sprintIds);
+  const activeSessionPeakPower = usePowerSessionStore(
+    (s) => s.sessionPeakPower
+  );
+  const activeSessionPeakVelocity = usePowerSessionStore(
+    (s) => s.sessionPeakVelocity
+  );
 
   const [historyMode, setHistoryMode] = React.useState<'sessions' | 'sprints'>(
     'sessions'
@@ -161,8 +167,23 @@ export default function Workouts() {
                     {new Date(sessionStartedAt).toLocaleString()}
                   </Text>
                   <Text className="text-neutral-600 dark:text-neutral-300">
-                    {`${sessionSprintIds.length} sprints`}
+                    {`${sessionSprintIds.length} ${sessionSprintIds.length === 1 ? 'sprint' : 'sprints'}`}
                   </Text>
+                  {activeSessionPeakPower != null ||
+                  activeSessionPeakVelocity != null ? (
+                    <Text className="mt-1 text-neutral-500 dark:text-neutral-400">
+                      {[
+                        activeSessionPeakPower != null
+                          ? `${Math.round(activeSessionPeakPower)} W`
+                          : null,
+                        activeSessionPeakVelocity != null
+                          ? `${activeSessionPeakVelocity.toFixed(2)} m/s`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  ) : null}
                   <Text className="text-primary-400">
                     {translate('powerProfile.history.sessions.active')}
                   </Text>
@@ -255,8 +276,22 @@ function SessionSwipeRow({
           {new Date(item.startedAt).toLocaleString()}
         </Text>
         <Text className="text-neutral-600 dark:text-neutral-300">
-          {`${item.sprintIds.length} sprints`}
+          {`${item.sprintIds.length} ${item.sprintIds.length === 1 ? 'sprint' : 'sprints'}`}
         </Text>
+        {item.sessionPeakPower != null || item.sessionPeakVelocity != null ? (
+          <Text className="text-neutral-500 dark:text-neutral-400">
+            {[
+              item.sessionPeakPower != null
+                ? `${Math.round(item.sessionPeakPower)} W`
+                : null,
+              item.sessionPeakVelocity != null
+                ? `${item.sessionPeakVelocity.toFixed(2)} m/s`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        ) : null}
         <Text className="text-neutral-600 dark:text-neutral-300">
           {translate('powerProfile.history.sessions.completed')}
         </Text>

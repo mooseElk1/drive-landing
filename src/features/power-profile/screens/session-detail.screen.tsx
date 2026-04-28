@@ -31,6 +31,8 @@ type SessionDetailState =
       sessionId: string;
       startedAt: number;
       sprintEntries: WorkoutEntry[];
+      sessionPeakPower: number | null;
+      sessionPeakVelocity: number | null;
     };
 
 export function SessionDetailScreen(): React.ReactElement {
@@ -42,6 +44,12 @@ export function SessionDetailScreen(): React.ReactElement {
   const activeSessionId = usePowerSessionStore((s) => s.sessionId);
   const activeStartedAt = usePowerSessionStore((s) => s.startedAt);
   const activeSprintIds = usePowerSessionStore((s) => s.sprintIds);
+  const activeSessionPeakPower = usePowerSessionStore(
+    (s) => s.sessionPeakPower
+  );
+  const activeSessionPeakVelocity = usePowerSessionStore(
+    (s) => s.sessionPeakVelocity
+  );
   const removeSprintId = usePowerSessionStore((s) => s.removeSprintId);
 
   const [state, setState] = React.useState<SessionDetailState>({
@@ -79,19 +87,43 @@ export function SessionDetailScreen(): React.ReactElement {
         .filter((e) => !e.deletedAt)
         .sort((a, b) => b.date.getTime() - a.date.getTime());
 
+      // Prefer persisted session peaks; fall back to live store values for the
+      // active session (not yet written to disk), then compute from entries.
+      const peakPower =
+        session?.sessionPeakPower ??
+        (isActiveFromStore ? activeSessionPeakPower : null) ??
+        (entries.length > 0
+          ? Math.max(...entries.map((e) => e.metrics?.peakPower ?? 0))
+          : null);
+      const peakVelocity =
+        session?.sessionPeakVelocity ??
+        (isActiveFromStore ? activeSessionPeakVelocity : null) ??
+        (entries.length > 0
+          ? Math.max(...entries.map((e) => e.metrics?.peakVelocity ?? 0))
+          : null);
+
       if (cancelled) return;
       setState({
         status: 'ready',
         sessionId: sessionId,
         startedAt: startedAt,
         sprintEntries: entries,
+        sessionPeakPower: peakPower,
+        sessionPeakVelocity: peakVelocity,
       });
     }
     void run();
     return () => {
       cancelled = true;
     };
-  }, [sessionId, activeSessionId, activeStartedAt, activeSprintIds]);
+  }, [
+    sessionId,
+    activeSessionId,
+    activeStartedAt,
+    activeSprintIds,
+    activeSessionPeakPower,
+    activeSessionPeakVelocity,
+  ]);
 
   if (state.status === 'loading') {
     return (
@@ -130,9 +162,39 @@ export function SessionDetailScreen(): React.ReactElement {
           {new Date(state.startedAt).toLocaleString()}
         </Text>
         <Text className="mt-1 text-neutral-600 dark:text-neutral-300">
-          {`${state.sprintEntries.length} sprints`}
+          {`${state.sprintEntries.length} ${state.sprintEntries.length === 1 ? 'sprint' : 'sprints'}`}
         </Text>
       </Tile>
+
+      <View className="mt-3 flex-row gap-3">
+        <Tile variant="stat" className="bg-white dark:bg-neutral-900">
+          <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+            {'Peak Power'}
+          </Text>
+          <Text className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            {state.sessionPeakPower != null
+              ? Math.round(state.sessionPeakPower).toString()
+              : '--'}
+          </Text>
+          <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+            {'W'}
+          </Text>
+        </Tile>
+
+        <Tile variant="stat" className="bg-white dark:bg-neutral-900">
+          <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+            {'Peak Velocity'}
+          </Text>
+          <Text className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+            {state.sessionPeakVelocity != null
+              ? state.sessionPeakVelocity.toFixed(2)
+              : '--'}
+          </Text>
+          <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+            {'m/s'}
+          </Text>
+        </Tile>
+      </View>
 
       <Tile className="mt-3 bg-white dark:bg-neutral-900">
         <Text className="mb-2 text-base font-semibold">

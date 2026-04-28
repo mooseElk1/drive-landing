@@ -14,6 +14,12 @@ type AthleteProfileState = {
   deleteAthlete: (athleteId: string) => void;
 
   getAthleteById: (athleteId: string) => AthleteProfile | null;
+
+  updateHistoricalPeak: (
+    athleteId: string,
+    peakPower: number,
+    loadKg: number
+  ) => void;
 };
 
 export const useAthleteProfileStore = create<AthleteProfileState>()(
@@ -43,6 +49,28 @@ export const useAthleteProfileStore = create<AthleteProfileState>()(
 
       getAthleteById: (athleteId) =>
         get().athletes.find((a) => a.id === athleteId) ?? null,
+
+      updateHistoricalPeak: (athleteId, peakPower, loadKg) =>
+        set((state) => {
+          const idx = state.athletes.findIndex((a) => a.id === athleteId);
+          if (idx === -1) return state;
+          const athlete = state.athletes[idx]!;
+          if (
+            athlete.historicalPeakPower !== null &&
+            peakPower <= athlete.historicalPeakPower
+          ) {
+            return state;
+          }
+          const updated: AthleteProfile = {
+            ...athlete,
+            historicalPeakPower: peakPower,
+            historicalPeakPowerLoad: loadKg,
+            updatedAt: Date.now(),
+          };
+          const next = [...state.athletes];
+          next[idx] = updated;
+          return { athletes: next };
+        }),
     }),
     {
       name: 'power-profile/athlete-profile-store',

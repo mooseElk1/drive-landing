@@ -17,6 +17,7 @@ import {
 } from '@/components/ui';
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
+import { SessionPeakTiles } from '@/features/power-profile/components/session-peak-tiles';
 import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
@@ -99,8 +100,16 @@ function WorkoutScreen() {
     (s) => s.loadSuggestionsEnabled
   );
   const addSprintId = usePowerSessionStore((s) => s.addSprintId);
+  const updateSessionPeaks = usePowerSessionStore((s) => s.updateSessionPeaks);
+  const sessionPeakPower = usePowerSessionStore((s) => s.sessionPeakPower);
+  const sessionPeakVelocity = usePowerSessionStore(
+    (s) => s.sessionPeakVelocity
+  );
   const discardSession = usePowerSessionStore((s) => s.discardSession);
   const startSession = usePowerSessionStore((s) => s.startSession);
+  const updateHistoricalPeak = useAthleteProfileStore(
+    (s) => s.updateHistoricalPeak
+  );
 
   useBufferSubscription(services.bufferService);
 
@@ -187,13 +196,26 @@ function WorkoutScreen() {
       testMode: null,
       targetZone: targetZone ?? null,
       loadSuggestionsEnabled,
-      sessionPeakPower: null,
+      sessionPeakPower,
+      sessionPeakVelocity,
       sessionPPLEstimate: null,
     });
 
     discardSession();
   };
 
+  const recordSprintPeaks = (
+    peakPower: number,
+    peakVelocity: number,
+    loadKg: number
+  ) => {
+    updateSessionPeaks(peakPower, peakVelocity);
+    if (activeAthleteId) {
+      updateHistoricalPeak(activeAthleteId, peakPower, loadKg);
+    }
+  };
+
+  // eslint-disable-next-line max-lines-per-function
   const handleSaveWorkout = async (data: WorkoutClass) => {
     if (saveInFlightRef.current) {
       return null;
@@ -205,6 +227,8 @@ function WorkoutScreen() {
 
     let result: Awaited<ReturnType<typeof saveWorkout>> = null;
     let savedWorkoutId: string | null = null;
+    let sprintPeakPower: number | null = null;
+    let sprintPeakVelocity: number | null = null;
     try {
       const workout = workoutHelper(
         data.name,
@@ -212,6 +236,10 @@ function WorkoutScreen() {
         services.sprintAnalysisService.getResult()
       );
       savedWorkoutId = workout.id;
+      sprintPeakPower =
+        workout.sprintAnalysis?.summary.peakPower?.value ?? null;
+      sprintPeakVelocity =
+        workout.sprintAnalysis?.summary.peakVelocity?.value ?? null;
 
       const athlete = activeAthleteId ? getAthleteById(activeAthleteId) : null;
       const pplAtTimeOfSprint = athlete?.currentPPL?.pplLoadKg ?? null;
@@ -248,6 +276,12 @@ function WorkoutScreen() {
     if (result) {
       if (sessionId && savedWorkoutId) {
         addSprintId(savedWorkoutId);
+      }
+      if (
+        typeof sprintPeakPower === 'number' &&
+        typeof sprintPeakVelocity === 'number'
+      ) {
+        recordSprintPeaks(sprintPeakPower, sprintPeakVelocity, massKg);
       }
       showMessage({
         message: 'Workout saved',
@@ -384,6 +418,7 @@ function WorkoutContent({
         >
           <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
             <LiveStatTiles />
+            {showEndSession ? <SessionPeakTiles /> : null}
             <ConfigurableChart isLogging={isLogging} />
             <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
             <SledMassTile />
