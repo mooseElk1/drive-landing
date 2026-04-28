@@ -269,6 +269,7 @@ function WorkoutScreen() {
     <WorkoutContent
       isLogging={isLogging}
       isSaving={isSaving}
+      showEndSession={Boolean(sessionId) && sprintIds.length > 0}
       toggleLogging={toggleLogging}
       onEndSession={() => void handleEndSession()}
       onSave={async (data) => {
@@ -353,6 +354,7 @@ function SaveSprintModal({
 function WorkoutContent({
   isLogging,
   isSaving,
+  showEndSession,
   toggleLogging,
   onEndSession,
   onSave,
@@ -361,6 +363,7 @@ function WorkoutContent({
 }: {
   isLogging: boolean;
   isSaving: boolean;
+  showEndSession: boolean;
   toggleLogging: () => void;
   onEndSession: () => void;
   onSave: (data: WorkoutClass) => Promise<void>;
@@ -387,16 +390,18 @@ function WorkoutContent({
           </SafeAreaView>
         </ScrollView>
 
-        <SafeAreaView edges={['left', 'right', 'bottom']}>
-          <View className="bg-neutral-50 px-4 pb-2 dark:bg-charcoal-950">
-            <Button
-              label="End session"
-              testID="end-session"
-              onPress={onEndSession}
-              disabled={isSaving}
-            />
-          </View>
-        </SafeAreaView>
+        {showEndSession ? (
+          <SafeAreaView edges={['left', 'right', 'bottom']}>
+            <View className="bg-neutral-50 px-4 pb-2 dark:bg-charcoal-950">
+              <Button
+                label="End session"
+                testID="end-session"
+                onPress={onEndSession}
+                disabled={isSaving}
+              />
+            </View>
+          </SafeAreaView>
+        ) : null}
       </View>
       <SaveSprintModal
         saveModal={saveModal}
