@@ -147,6 +147,19 @@ module.exports = {
 
 Corner radius is always `rounded-3xl` (24px). Tiles can be pressable or static.
 
+### Recording screen stat tiles (Workout)
+
+On the **Workout recording screen**, the Velocity/Power (and any other live stat) tiles use a consistent “recording stat” layout:
+
+- **Label**: left-aligned, above the value
+- **Value**: left-aligned under the label
+- **Unit**: on the **same line** as the value, to the **right** of the value (baseline aligned)
+
+Implementation notes:
+
+- `Tile` `variant="stat"` defaults to `items-center`, so to left-align content for recording stats, use an **inner full-width container** (`width: '100%'`) with `alignItems: 'flex-start'`, and render value+unit in a `row` with `alignItems: 'baseline'`.
+- Current implementation lives in `src/components/live-stat-tiles.tsx`.
+
 ```tsx
 import { Tile } from '@/components/ui/tile';
 

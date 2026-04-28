@@ -27,19 +27,31 @@ export function LiveStatTiles() {
   return (
     <View style={styles.row}>
       <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
-        <Text style={[styles.label, { color: labelColor }]}>{'VELOCITY'}</Text>
-        <Text style={[styles.value, { color: valueColor }]}>
-          {currentVelocity !== null ? currentVelocity.toFixed(2) : '--'}
-        </Text>
-        <Text style={[styles.unit, { color: unitColor }]}>{'m/s'}</Text>
+        <View style={styles.content}>
+          <Text style={[styles.label, { color: labelColor }]}>
+            {'VELOCITY'}
+          </Text>
+          <View style={styles.valueRow}>
+            <Text style={[styles.value, { color: valueColor }]}>
+              {currentVelocity !== null ? currentVelocity.toFixed(2) : '--'}
+            </Text>
+            <Text style={[styles.unit, { color: unitColor }]}>{'m/s'}</Text>
+          </View>
+        </View>
       </Tile>
 
       <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
-        <Text style={[styles.label, { color: labelColor }]}>{'POWER'}</Text>
-        <Text style={[styles.value, { color: valueColor }]}>
-          {currentPower !== null ? Math.round(currentPower).toString() : '--'}
-        </Text>
-        <Text style={[styles.unit, { color: unitColor }]}>{'W'}</Text>
+        <View style={styles.content}>
+          <Text style={[styles.label, { color: labelColor }]}>{'POWER'}</Text>
+          <View style={styles.valueRow}>
+            <Text style={[styles.value, { color: valueColor }]}>
+              {currentPower !== null
+                ? Math.round(currentPower).toString()
+                : '--'}
+            </Text>
+            <Text style={[styles.unit, { color: unitColor }]}>{'W'}</Text>
+          </View>
+        </View>
       </Tile>
     </View>
   );
@@ -52,6 +64,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 8,
     paddingTop: 4,
+  },
+  content: {
+    width: '100%',
+    alignItems: 'flex-start',
+    paddingLeft: 8,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   label: {
     fontSize: 10,
@@ -67,6 +88,6 @@ const styles = StyleSheet.create({
   unit: {
     fontSize: 11,
     fontWeight: '500',
-    marginTop: 1,
+    marginLeft: 6,
   },
 });
