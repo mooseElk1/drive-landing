@@ -372,16 +372,23 @@ function WorkoutContent({
   return (
     <>
       <FocusAwareStatusBar />
-      <ScrollView
-        className="bg-neutral-50 px-4 dark:bg-charcoal-950"
-        contentInsetAdjustmentBehavior="never"
-        automaticallyAdjustContentInsets={false}
-      >
-        <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
-          <LiveStatTiles />
-          <ConfigurableChart isLogging={isLogging} />
-          <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
-          <View className="mx-5 mb-2">
+      <View className="flex-1 bg-neutral-50 dark:bg-charcoal-950">
+        <ScrollView
+          className="px-4"
+          contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustContentInsets={false}
+          contentContainerStyle={{ paddingBottom: 96 }}
+        >
+          <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
+            <LiveStatTiles />
+            <ConfigurableChart isLogging={isLogging} />
+            <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
+            <SledMassTile />
+          </SafeAreaView>
+        </ScrollView>
+
+        <SafeAreaView edges={['left', 'right', 'bottom']}>
+          <View className="bg-neutral-50 px-4 pb-2 dark:bg-charcoal-950">
             <Button
               label="End session"
               testID="end-session"
@@ -389,9 +396,8 @@ function WorkoutContent({
               disabled={isSaving}
             />
           </View>
-          <SledMassTile />
         </SafeAreaView>
-      </ScrollView>
+      </View>
       <SaveSprintModal
         saveModal={saveModal}
         isSaving={isSaving}
