@@ -418,7 +418,7 @@ function WorkoutContent({
           className="px-4"
           contentInsetAdjustmentBehavior="never"
           automaticallyAdjustContentInsets={false}
-          contentContainerStyle={{ paddingBottom: 96 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
         >
           <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
             <LiveStatTiles />
@@ -426,21 +426,18 @@ function WorkoutContent({
             <ConfigurableChart isLogging={isLogging} />
             <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
             <SledMassTile />
+            {showEndSession ? (
+              <View className="mt-3 pb-2">
+                <Button
+                  label="End session"
+                  testID="end-session"
+                  onPress={onEndSession}
+                  disabled={isSaving}
+                />
+              </View>
+            ) : null}
           </SafeAreaView>
         </ScrollView>
-
-        {showEndSession ? (
-          <SafeAreaView edges={['left', 'right', 'bottom']}>
-            <View className="bg-neutral-50 px-4 pb-2 dark:bg-charcoal-950">
-              <Button
-                label="End session"
-                testID="end-session"
-                onPress={onEndSession}
-                disabled={isSaving}
-              />
-            </View>
-          </SafeAreaView>
-        ) : null}
       </View>
       <SaveSprintModal
         saveModal={saveModal}
