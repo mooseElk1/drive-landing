@@ -294,6 +294,7 @@ Corner radius is always `rounded-xl` (12px).
 - **Typography:** Use React Native `Text` with Tailwind size/weight classes (`text-sm`, `text-lg`, `font-semibold`, etc.).
 - **Spacing:** 16px base grid — `p-4`, `gap-4`, `mb-4` are the common units.
 - **No shadow, no gradients** — flat surfaces only.
+- **Header back buttons:** Use the shared icon-only `HeaderBackButton` (`src/components/ui/header-back-button.tsx`) for custom `headerLeft` back behavior.
 
 ---
 

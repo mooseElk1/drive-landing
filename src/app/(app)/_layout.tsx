@@ -1,8 +1,9 @@
 /* eslint-disable max-lines-per-function */
 import { SplashScreen, Tabs, useRouter } from 'expo-router';
 import React, { useCallback, useEffect } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable } from 'react-native';
 
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import {
   Edit as EditIcon,
   Feed as FeedIcon,
@@ -14,8 +15,6 @@ import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-p
 import { translate } from '@/lib/i18n/utils';
 
 const headerIconButtonStyle = { marginRight: 12 } as const;
-const headerLeftButtonStyle = { marginLeft: 12 } as const;
-
 export default function TabLayout() {
   const router = useRouter();
   const hasAthlete = useAthleteProfileStore((s) => s.athletes.length > 0);
@@ -92,17 +91,11 @@ export default function TabLayout() {
           href: null,
           headerShown: true,
           headerLeft: ({ tintColor }) => (
-            <Pressable
+            <HeaderBackButton
               onPress={() => router.replace('/workout-list')}
-              hitSlop={10}
-              style={headerLeftButtonStyle}
-            >
-              <Text
-                style={{ color: tintColor, fontSize: 16, fontWeight: '600' }}
-              >
-                {translate('powerProfile.sessionDetail.back')}
-              </Text>
-            </Pressable>
+              color={tintColor}
+              accessibilityLabel={translate('powerProfile.sessionDetail.back')}
+            />
           ),
         }}
       />

@@ -1,8 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
 
-import { ArrowRight } from '@/components/ui/icons';
+import { HeaderBackButton } from '@/components/ui/header-back-button';
 import { SprintDetailScreen } from '@/features/power-profile/screens/sprint-detail.screen';
 import { translate } from '@/lib/i18n/utils';
 
@@ -40,21 +39,11 @@ export default function Route() {
       <Stack.Screen
         options={{
           headerLeft: ({ tintColor }) => (
-            <Pressable onPress={onBack} hitSlop={10}>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-              >
-                <ArrowRight
-                  color={tintColor}
-                  style={{ transform: [{ scaleX: -1 }] }}
-                />
-                <Text
-                  style={{ color: tintColor, fontSize: 16, fontWeight: '600' }}
-                >
-                  {translate('powerProfile.sessionDetail.back')}
-                </Text>
-              </View>
-            </Pressable>
+            <HeaderBackButton
+              onPress={onBack}
+              color={tintColor}
+              accessibilityLabel={translate('powerProfile.sessionDetail.back')}
+            />
           ),
         }}
       />

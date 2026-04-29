@@ -1,5 +1,6 @@
 export * from './arrow-right';
 export * from './caret-down';
+export * from './chevron-left';
 export * from './edit';
 export * from './feed';
 export * from './github';
