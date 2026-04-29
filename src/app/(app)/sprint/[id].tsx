@@ -8,12 +8,28 @@ import { translate } from '@/lib/i18n/utils';
 
 export default function Route() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string; sessionId?: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    sessionId?: string;
+    from?: string;
+    historyMode?: string;
+  }>();
   const sessionId = params.sessionId;
+  const fromHistory = params.from === 'history';
 
   const onBack = () => {
     if (sessionId) {
       router.replace({ pathname: '/session/[id]', params: { id: sessionId } });
+      return;
+    }
+    if (fromHistory) {
+      router.replace({
+        pathname: '/workout-list',
+        params: {
+          historyMode:
+            params.historyMode === 'sessions' ? 'sessions' : 'sprints',
+        },
+      });
       return;
     }
     router.back();

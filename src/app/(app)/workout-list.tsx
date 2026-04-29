@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import Swipeable, {
@@ -39,6 +39,9 @@ import type { WorkoutEntry } from '@/types/workout-database';
 /* eslint-disable max-lines-per-function */
 export default function Workouts() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    historyMode?: 'sessions' | 'sprints' | string;
+  }>();
   const { workoutList, isLoading, isError } = useWorkoutState();
   const { fetchWorkouts, deleteWorkout, softDeleteWorkout } =
     useWorkoutActions();
@@ -57,10 +60,28 @@ export default function Workouts() {
   );
 
   const [historyMode, setHistoryMode] = React.useState<'sessions' | 'sprints'>(
-    'sessions'
+    params.historyMode === 'sprints' ? 'sprints' : 'sessions'
   );
   const [sessions, setSessions] = React.useState<PowerProfileSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (params.historyMode === 'sprints' && historyMode !== 'sprints') {
+      setHistoryMode('sprints');
+      return;
+    }
+    if (params.historyMode === 'sessions' && historyMode !== 'sessions') {
+      setHistoryMode('sessions');
+    }
+  }, [params.historyMode, historyMode]);
+
+  const handleChangeHistoryMode = React.useCallback(
+    (next: 'sessions' | 'sprints') => {
+      setHistoryMode(next);
+      router.setParams({ historyMode: next });
+    },
+    [router]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -125,7 +146,7 @@ export default function Workouts() {
     <View className="flex-1 px-4 pt-4">
       <SegmentedControl
         value={historyMode}
-        onChange={setHistoryMode}
+        onChange={handleChangeHistoryMode}
         options={[
           {
             value: 'sessions',
@@ -237,7 +258,16 @@ export default function Workouts() {
             <WorkoutItem
               item={item}
               onDelete={handleDeleteWorkout}
-              onPress={() => router.push(`/sprint/${item.id}`)}
+              onPress={() =>
+                router.push({
+                  pathname: '/sprint/[id]',
+                  params: {
+                    id: item.id,
+                    from: 'history',
+                    historyMode: 'sprints',
+                  },
+                })
+              }
             />
           )}
           ListEmptyComponent={<EmptyState />}
