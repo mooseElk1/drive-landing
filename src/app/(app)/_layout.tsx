@@ -1,7 +1,12 @@
 /* eslint-disable max-lines-per-function */
-import { SplashScreen, Tabs, useRouter } from 'expo-router';
+import {
+  SplashScreen,
+  Tabs,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 import React, { useCallback, useEffect } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 import {
   Edit as EditIcon,
@@ -11,11 +16,14 @@ import {
   Settings as SettingsIcon,
 } from '@/components/ui/icons';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
+import { translate } from '@/lib/i18n/utils';
 
 const headerIconButtonStyle = { marginRight: 12 } as const;
+const headerLeftButtonStyle = { marginLeft: 12 } as const;
 
 export default function TabLayout() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ sessionId?: string | string[] }>();
   const hasAthlete = useAthleteProfileStore((s) => s.athletes.length > 0);
   const hideSplash = useCallback(async () => {
     await SplashScreen.hideAsync();
@@ -84,9 +92,62 @@ export default function TabLayout() {
         }}
       />
 
-      <Tabs.Screen name="session/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="session/[id]"
+        options={{
+          href: null,
+          headerShown: true,
+          headerLeft: ({ tintColor }) => (
+            <Pressable
+              onPress={() => router.replace('/workout-list')}
+              hitSlop={10}
+              style={headerLeftButtonStyle}
+            >
+              <Text
+                style={{ color: tintColor, fontSize: 16, fontWeight: '600' }}
+              >
+                {translate('powerProfile.sessionDetail.back')}
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
 
-      <Tabs.Screen name="sprint/[id]" options={{ href: null }} />
+      <Tabs.Screen
+        name="sprint/[id]"
+        options={{
+          href: null,
+          headerShown: true,
+          headerLeft: ({ tintColor }) => {
+            const sessionId = Array.isArray(params.sessionId)
+              ? params.sessionId[0]
+              : params.sessionId;
+            const onBack = () => {
+              if (sessionId) {
+                router.replace({
+                  pathname: '/session/[id]',
+                  params: { id: sessionId },
+                });
+                return;
+              }
+              router.replace('/workout-list');
+            };
+            return (
+              <Pressable
+                onPress={onBack}
+                hitSlop={10}
+                style={headerLeftButtonStyle}
+              >
+                <Text
+                  style={{ color: tintColor, fontSize: 16, fontWeight: '600' }}
+                >
+                  {translate('powerProfile.sessionDetail.back')}
+                </Text>
+              </Pressable>
+            );
+          },
+        }}
+      />
       <Tabs.Screen
         name="profile-setup"
         options={{
