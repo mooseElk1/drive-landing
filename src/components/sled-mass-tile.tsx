@@ -77,7 +77,7 @@ function EditMassModal({
   );
 }
 
-export function SledMassTile() {
+export function SledMassTile({ className }: { className?: string }) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const modal = useModal();
@@ -97,7 +97,9 @@ export function SledMassTile() {
         pressable
         variant="full"
         onPress={modal.present}
-        className="mx-5 mb-2 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900"
+        className={
+          className ?? 'mx-5 mb-2 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900'
+        }
       >
         <Text style={[tileStyles.label, { color: labelColor }]}>
           {'SLED MASS'}

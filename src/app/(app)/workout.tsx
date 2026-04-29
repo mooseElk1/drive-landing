@@ -17,6 +17,7 @@ import {
 } from '@/components/ui';
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
+import { LoadRecommendationTile } from '@/features/power-profile/components/load-recommendation-tile';
 import { SessionPeakTiles } from '@/features/power-profile/components/session-peak-tiles';
 import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
@@ -301,6 +302,8 @@ function WorkoutScreen() {
       isLogging={isLogging}
       isSaving={isSaving}
       showEndSession={Boolean(sessionId) && sprintIds.length > 0}
+      sessionId={sessionId}
+      loadSuggestionsEnabled={loadSuggestionsEnabled}
       toggleLogging={toggleLogging}
       onEndSession={() => void handleEndSession()}
       onSave={async (data) => {
@@ -382,10 +385,33 @@ function SaveSprintModal({
   );
 }
 
+function LoadRow({
+  sessionId,
+  loadSuggestionsEnabled,
+}: {
+  sessionId: string | null;
+  loadSuggestionsEnabled: boolean;
+}) {
+  const showRecommendation = Boolean(sessionId) && loadSuggestionsEnabled;
+
+  if (showRecommendation) {
+    return (
+      <View className="mx-5 mb-2 flex-row gap-2">
+        <SledMassTile className="flex-1 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900" />
+        <LoadRecommendationTile />
+      </View>
+    );
+  }
+
+  return <SledMassTile />;
+}
+
 function WorkoutContent({
   isLogging,
   isSaving,
   showEndSession,
+  sessionId,
+  loadSuggestionsEnabled,
   toggleLogging,
   onEndSession,
   onSave,
@@ -395,6 +421,8 @@ function WorkoutContent({
   isLogging: boolean;
   isSaving: boolean;
   showEndSession: boolean;
+  sessionId: string | null;
+  loadSuggestionsEnabled: boolean;
   toggleLogging: () => void;
   onEndSession: () => void;
   onSave: (data: WorkoutClass) => Promise<void>;
@@ -418,7 +446,10 @@ function WorkoutContent({
             {showEndSession ? <SessionPeakTiles /> : null}
             <ConfigurableChart isLogging={isLogging} />
             <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
-            <SledMassTile />
+            <LoadRow
+              sessionId={sessionId}
+              loadSuggestionsEnabled={loadSuggestionsEnabled}
+            />
             {showEndSession ? (
               <View className="mt-3 pb-2">
                 <Button

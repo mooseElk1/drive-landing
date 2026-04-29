@@ -1,4 +1,4 @@
-import { TrainingZone } from '../types/training-zones';
+import { TrainingZone, type ZonePrescription } from '../types/training-zones';
 import { computeZonePrescription } from './zone-calculator-service';
 
 export type LoadSuggestionMode = 'discovery' | 'training';
@@ -152,4 +152,102 @@ export function getNextLoadSuggestion(
     pplLoadKg: input.pplLoadKg,
     targetZone: input.targetZone,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Load Recommendation — richer, pre-sprint-aware API
+// ---------------------------------------------------------------------------
+
+export type LoadRecommendation =
+  | {
+      kind: 'zone_target';
+      zone: TrainingZone;
+      minKg: number;
+      maxKg: number;
+      suggestedKg: number;
+      rationale: string;
+    }
+  | {
+      kind: 'next_sprint';
+      suggestedKg: number;
+      zone: TrainingZone | null;
+      rationale: string;
+    }
+  | { kind: 'no_ppl_nudge' }
+  | { kind: 'first_sprint_start'; suggestedKg: number | null };
+
+export type LoadRecommendationInput = {
+  sessionMode: 'training' | 'test' | 'discovery' | 'targeted_retest';
+  currentLoadKg: number;
+  pplLoadKg: number | null;
+  targetZone: TrainingZone | null;
+  lastSprintPowerW: number | null;
+  secondLastSprintPowerW: number | null;
+};
+
+function zoneSuggestedLoad(
+  zone: TrainingZone,
+  pplLoadKg: number,
+  prescription: ZonePrescription
+): number {
+  // For Peak Power the zone midpoint = 100% PPL = pplLoadKg itself.
+  // For other zones use the midpoint of the defined band as % of PPL.
+  if (zone === TrainingZone.PEAK_POWER) return roundToOneDecimal(pplLoadKg);
+
+  const band = prescription[zone];
+  const max = Number.isFinite(band.maxLoadKg)
+    ? band.maxLoadKg
+    : band.minLoadKg * 1.1;
+  return roundToOneDecimal((band.minLoadKg + max) / 2);
+}
+
+export function getLoadRecommendation(
+  input: LoadRecommendationInput
+): LoadRecommendation {
+  const isTestMode =
+    input.sessionMode === 'test' ||
+    input.sessionMode === 'discovery' ||
+    input.sessionMode === 'targeted_retest';
+
+  // Training mode: hard gate — PPL required
+  if (!isTestMode) {
+    if (!input.pplLoadKg) return { kind: 'no_ppl_nudge' };
+
+    const prescription = computeZonePrescription(input.pplLoadKg);
+    const zone = input.targetZone ?? TrainingZone.PEAK_POWER;
+    const band = prescription[zone];
+    const suggestedKg = zoneSuggestedLoad(zone, input.pplLoadKg, prescription);
+
+    return {
+      kind: 'zone_target',
+      zone,
+      minKg: band.minLoadKg,
+      maxKg: Number.isFinite(band.maxLoadKg) ? band.maxLoadKg : suggestedKg,
+      suggestedKg,
+      rationale: `Target: ${zone.replace(/_/g, ' ')} zone`,
+    };
+  }
+
+  // Test / Discovery mode
+  if (input.lastSprintPowerW === null) {
+    // No sprint yet — suggest a starting load below the expected curve peak
+    const suggestedKg = input.pplLoadKg
+      ? roundToOneDecimal(input.pplLoadKg * 0.65)
+      : null;
+    return { kind: 'first_sprint_start', suggestedKg };
+  }
+
+  // After at least one sprint — use ascending/peak/descending limb logic
+  const suggestion = computeDiscoveryNextLoad({
+    currentLoadKg: input.currentLoadKg,
+    previousPowerW: input.secondLastSprintPowerW,
+    currentPowerW: input.lastSprintPowerW,
+  });
+
+  return {
+    kind: 'next_sprint',
+    suggestedKg: suggestion.nextLoadKg,
+    zone: suggestion.zone,
+    rationale: suggestion.rationale,
+  };
 }

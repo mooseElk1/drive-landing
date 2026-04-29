@@ -20,6 +20,9 @@ type PowerSessionState = {
   sessionPeakVelocity: number | null;
   sessionPeakPowerLoad: number | null;
 
+  lastSprintPowerW: number | null;
+  secondLastSprintPowerW: number | null;
+
   historicalPBBeatenThisSession: boolean;
 
   interruptedAt: number | null;
@@ -67,6 +70,9 @@ export const usePowerSessionStore = create<PowerSessionState>()(
       sessionPeakVelocity: null,
       sessionPeakPowerLoad: null,
 
+      lastSprintPowerW: null,
+      secondLastSprintPowerW: null,
+
       historicalPBBeatenThisSession: false,
 
       interruptedAt: null,
@@ -90,6 +96,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sessionPeakPower: null,
           sessionPeakVelocity: null,
           sessionPeakPowerLoad: null,
+          lastSprintPowerW: null,
+          secondLastSprintPowerW: null,
           historicalPBBeatenThisSession: false,
           interruptedAt: null,
           endedAt: null,
@@ -119,6 +127,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
               state.sessionPeakVelocity === null
                 ? peakVelocity
                 : Math.max(state.sessionPeakVelocity, peakVelocity),
+            secondLastSprintPowerW: state.lastSprintPowerW,
+            lastSprintPowerW: peakPower,
           };
         }),
 
@@ -139,6 +149,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sessionPeakPower: null,
           sessionPeakVelocity: null,
           sessionPeakPowerLoad: null,
+          lastSprintPowerW: null,
+          secondLastSprintPowerW: null,
           historicalPBBeatenThisSession: false,
           interruptedAt: null,
           endedAt: null,
