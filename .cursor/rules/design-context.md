@@ -247,6 +247,45 @@ export function Tile(props: TileViewProps | TilePressableProps) {
 
 ---
 
+## Core Button Primitive (`src/components/ui/button.tsx`)
+
+`Button` is the universal pressable action component. Use it for primary/secondary CTAs, destructive actions, and inline actions (ghost/link).
+
+Corner radius is always `rounded-xl` (12px).
+
+### Variants
+
+| Variant       | Notes                           |
+| ------------- | ------------------------------- |
+| `default`     | Primary CTA (orange)            |
+| `warning`     | Warning CTA (yellow)            |
+| `secondary`   | Secondary CTA (neutral surface) |
+| `inverted`    | Light surface button            |
+| `outline`     | Border + dark surface           |
+| `destructive` | Destructive CTA (danger)        |
+| `ghost`       | Text-only with underline        |
+| `link`        | Text-only link (primary color)  |
+
+### Sizes
+
+| Size      | Container   |
+| --------- | ----------- |
+| `default` | `h-10 px-4` |
+| `lg`      | `h-12 px-8` |
+| `sm`      | `h-8 px-3`  |
+| `icon`    | `size-9`    |
+
+### Common props
+
+- `label`: Text label (ignored when rendering explicit children)
+- `variant`: One of the variants above
+- `size`: One of the sizes above
+- `fullWidth`: Defaults to `true`; when `false` the button sizes to content and centers itself
+- `disabled`: Disables interaction and applies disabled styling
+- `loading`: Disables interaction and shows an activity indicator
+
+---
+
 ## UI Conventions
 
 - **Styling:** NativeWind Tailwind class names only (`className="..."`). No inline style objects unless absolutely necessary.

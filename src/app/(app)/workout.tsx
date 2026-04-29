@@ -47,20 +47,13 @@ function StartStopButton({
 }) {
   return (
     <View className="mb-4 flex-row items-center justify-center">
-      <Pressable
+      <Button
         onPress={onPress}
-        className={`h-[51px] w-[85%] items-center justify-center rounded-full border px-8 ${
-          isLogging
-            ? 'border-warning-500 bg-warning-500'
-            : 'border-primary-400 bg-primary-400'
-        }`}
-      >
-        <Text
-          className={`text-base font-bold ${isLogging ? 'text-neutral-950' : 'text-white'}`}
-        >
-          {isLogging ? 'Stop' : 'Start'}
-        </Text>
-      </Pressable>
+        label={isLogging ? 'Stop' : 'Start'}
+        variant={isLogging ? 'warning' : 'default'}
+        className="h-[51px] w-[85%]"
+        textClassName="font-bold"
+      />
     </View>
   );
 }
@@ -462,7 +455,7 @@ const sheetStyles = StyleSheet.create({
   },
   btn: {
     height: 52,
-    borderRadius: 30,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },

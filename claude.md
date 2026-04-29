@@ -28,6 +28,11 @@ If you’re the “vibe coder” mostly touching screens and components, these a
 - Use the `Tile` primitive (`src/components/ui/tile.tsx`) for any new “tile” UI (stat cards, input tiles, etc.) so corner radius and padding stay consistent across the app.
 - **Workout recording stat tiles**: On the recorder screen, live stat tiles (e.g. Velocity/Power) should be **label above**, **value left-aligned**, with **unit to the right of the value on the same line** (baseline aligned). This is recording-screen-specific; other screens may use a different stat tile format.
 
+**Button standard**
+
+- Use the `Button` primitive (`src/components/ui/button.tsx`) for tappable actions so styling stays consistent across the app.
+- Button corner radius is `rounded-xl` (12px).
+
 ### Safe Places for UI Work
 
 **Good folders to edit:**
