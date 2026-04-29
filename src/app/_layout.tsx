@@ -1,6 +1,7 @@
 // Import  global CSS file
 import '../../global.css';
 
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import {
   Rajdhani_400Regular,
   Rajdhani_500Medium,
@@ -68,22 +69,24 @@ function Providers({ children }: { children: React.ReactNode }) {
       style={styles.container}
       className={theme.dark ? `dark` : undefined}
     >
-      <LoggedDataProvider>
-        <PeakVelocityProvider>
-          <PeakPowerProvider>
-            <KeyboardProvider>
-              <ThemeProvider value={theme}>
-                <APIProvider>
-                  <BottomSheetModalProvider>
-                    {children}
-                    <FlashMessage position="top" />
-                  </BottomSheetModalProvider>
-                </APIProvider>
-              </ThemeProvider>
-            </KeyboardProvider>
-          </PeakPowerProvider>
-        </PeakVelocityProvider>
-      </LoggedDataProvider>
+      <ActionSheetProvider>
+        <LoggedDataProvider>
+          <PeakVelocityProvider>
+            <PeakPowerProvider>
+              <KeyboardProvider>
+                <ThemeProvider value={theme}>
+                  <APIProvider>
+                    <BottomSheetModalProvider>
+                      {children}
+                      <FlashMessage position="top" />
+                    </BottomSheetModalProvider>
+                  </APIProvider>
+                </ThemeProvider>
+              </KeyboardProvider>
+            </PeakPowerProvider>
+          </PeakVelocityProvider>
+        </LoggedDataProvider>
+      </ActionSheetProvider>
     </GestureHandlerRootView>
   );
 }

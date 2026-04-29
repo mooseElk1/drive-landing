@@ -1,4 +1,5 @@
 /* eslint-disable max-lines-per-function */
+import { useActionSheet } from '@expo/react-native-action-sheet';
 import * as d3 from 'd3';
 import { useColorScheme } from 'nativewind';
 import { useState } from 'react';
@@ -201,6 +202,7 @@ export function ConfigurableChart({ isLogging }: ConfigurableChartProps) {
   const { loggedData, getFullData } = useLoggedData();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { showActionSheetWithOptions } = useActionSheet();
 
   // --- Chart layout constants ---
   const chartWidth = screenWidth - 40;
@@ -348,74 +350,82 @@ export function ConfigurableChart({ isLogging }: ConfigurableChartProps) {
 
   const showLiveBadge = isAtLiveEdge && isLogging;
 
+  const selectedTimeWindowLabel =
+    PILLS.find((p) => p.value === timeWindowSeconds)?.label ??
+    `${timeWindowSeconds}s`;
+
+  const timeWindowButtonBg = isDark
+    ? colors.charcoal[800]
+    : colors.neutral[200];
+  const timeWindowButtonText = isDark
+    ? colors.neutral[300]
+    : colors.neutral[600];
+
+  const openTimeWindowActionSheet = () => {
+    const options = [...PILLS.map((p) => p.label), 'Cancel'];
+    const cancelButtonIndex = options.length - 1;
+
+    showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex,
+        title: 'Time window',
+      },
+      (selectedIndex?: number) => {
+        if (selectedIndex == null) return;
+        if (selectedIndex === cancelButtonIndex) return;
+
+        const selectedPill = PILLS[selectedIndex];
+        if (!selectedPill) return;
+
+        setTimeWindowSeconds(selectedPill.value);
+        timeWindowSV.value = selectedPill.value;
+        setPanOffsetSecondsJS(0);
+        panOffsetSV.value = 0;
+      }
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header row: channel label (tap → picker) + LIVE badge */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => setPickerVisible(true)}>
-          <Text style={[styles.channelLabel, { color: labelColor }]}>
-            {CHANNEL_DISPLAY_NAMES[selectedChannel] ?? selectedChannel}
-          </Text>
-        </TouchableOpacity>
-        {showLiveBadge && (
-          <View
-            style={[
-              styles.liveBadge,
-              {
-                backgroundColor: isDark
-                  ? colors.primary[600]
-                  : colors.primary[500],
-              },
-            ]}
-          >
-            <Text style={styles.liveBadgeText}>{LIVE_LABEL}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Time-window pills */}
-      <View style={styles.pillRow}>
-        {PILLS.map((pill) => {
-          const isActive = timeWindowSeconds === pill.value;
-          return (
-            <TouchableOpacity
-              key={pill.label}
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => setPickerVisible(true)}>
+            <Text style={[styles.channelLabel, { color: labelColor }]}>
+              {CHANNEL_DISPLAY_NAMES[selectedChannel] ?? selectedChannel}
+            </Text>
+          </TouchableOpacity>
+          {showLiveBadge && (
+            <View
               style={[
-                styles.pill,
+                styles.liveBadge,
                 {
-                  backgroundColor: isActive
-                    ? isDark
-                      ? colors.primary[600]
-                      : colors.primary[500]
-                    : isDark
-                      ? colors.charcoal[800]
-                      : colors.neutral[200],
+                  backgroundColor: isDark
+                    ? colors.primary[600]
+                    : colors.primary[500],
                 },
               ]}
-              onPress={() => {
-                setTimeWindowSeconds(pill.value);
-                timeWindowSV.value = pill.value;
-                setPanOffsetSecondsJS(0);
-                panOffsetSV.value = 0;
-              }}
             >
-              <Text
-                style={[
-                  styles.pillLabel,
-                  {
-                    color: isActive
-                      ? colors.white
-                      : isDark
-                        ? colors.neutral[300]
-                        : colors.neutral[600],
-                  },
-                ]}
-              >
-                {pill.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+              <Text style={styles.liveBadgeText}>{LIVE_LABEL}</Text>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity
+          onPress={openTimeWindowActionSheet}
+          style={[
+            styles.pill,
+            styles.timeWindowPill,
+            { backgroundColor: timeWindowButtonBg },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`Time window: ${selectedTimeWindowLabel}`}
+        >
+          <Text style={[styles.pillLabel, { color: timeWindowButtonText }]}>
+            {selectedTimeWindowLabel}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <GestureDetector gesture={gesture}>
@@ -523,9 +533,14 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 6,
+  },
+  headerLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   channelLabel: {
     fontSize: 14,
@@ -536,15 +551,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
+  timeWindowPill: {
+    borderRadius: 999,
+  },
   pillLabel: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  pillRow: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingBottom: 6,
-    paddingHorizontal: 20,
   },
   liveBadge: {
     borderRadius: 4,
