@@ -19,11 +19,15 @@ import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
 import { LoadRecommendationTile } from '@/features/power-profile/components/load-recommendation-tile';
 import { SessionPeakTiles } from '@/features/power-profile/components/session-peak-tiles';
+import { finalizeDiscoveryPPL } from '@/features/power-profile/services/discovery-ppl-finalization-service';
 import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { usePowerSessionStore } from '@/features/power-profile/store/power-session-store';
-import type { PowerProfileSessionMode } from '@/features/power-profile/types/power-session';
+import type {
+  PowerProfileSession,
+  PowerProfileSessionMode,
+} from '@/features/power-profile/types/power-session';
 import { workoutHelper } from '@/features/workout/helpers/workout-helper';
 import {
   useWorkoutServices,
@@ -88,6 +92,7 @@ function WorkoutScreen() {
   const sessionId = usePowerSessionStore((s) => s.sessionId);
   const sessionAthleteId = usePowerSessionStore((s) => s.athleteId);
   const startedAt = usePowerSessionStore((s) => s.startedAt);
+  const sessionMode = usePowerSessionStore((s) => s.sessionMode);
   const sprintIds = usePowerSessionStore((s) => s.sprintIds);
   const targetZone = usePowerSessionStore((s) => s.targetZone);
   const loadSuggestionsEnabled = usePowerSessionStore(
@@ -104,9 +109,13 @@ function WorkoutScreen() {
   );
   const discardSession = usePowerSessionStore((s) => s.discardSession);
   const startSession = usePowerSessionStore((s) => s.startSession);
+  const markHistoricalPeakBeaten = usePowerSessionStore(
+    (s) => s.markHistoricalPeakBeaten
+  );
   const updateHistoricalPeak = useAthleteProfileStore(
     (s) => s.updateHistoricalPeak
   );
+  const commitPPLRevision = useAthleteProfileStore((s) => s.commitPPLRevision);
 
   useBufferSubscription(services.bufferService);
 
@@ -182,6 +191,38 @@ function WorkoutScreen() {
     }
     if (!sessionId || !startedAt) return;
 
+    let testStatus: PowerProfileSession['testStatus'] = 'not_a_test';
+    let testMode: PowerProfileSession['testMode'] = null;
+    let sessionPPLEstimate: number | null = null;
+
+    if (sessionMode === 'discovery') {
+      testMode = 'discovery';
+      const discoveryAthlete = sessionAthleteId
+        ? getAthleteById(sessionAthleteId)
+        : null;
+      const revision =
+        sessionAthleteId && discoveryAthlete
+          ? await finalizeDiscoveryPPL({
+              sprintIds,
+              bodyWeightKg: discoveryAthlete.bodyWeightKg,
+            })
+          : null;
+
+      if (revision && sessionAthleteId) {
+        commitPPLRevision(sessionAthleteId, revision);
+        testStatus = 'complete';
+        sessionPPLEstimate = revision.pplLoadKg;
+      } else {
+        testStatus = 'incomplete';
+        showMessage({
+          message:
+            'Discovery session saved — need at least two valid sprints to set PPL.',
+          type: 'info',
+          duration: 3500,
+        });
+      }
+    }
+
     await saveSession({
       sessionId,
       athleteId: sessionAthleteId,
@@ -189,14 +230,14 @@ function WorkoutScreen() {
       startedAt,
       completedAt: Date.now(),
       deletedAt: null,
-      testStatus: 'not_a_test',
-      testMode: null,
+      testStatus,
+      testMode,
       targetZone: targetZone ?? null,
       loadSuggestionsEnabled,
       sessionPeakPower,
       sessionPeakVelocity,
       sessionPeakPowerLoad,
-      sessionPPLEstimate: null,
+      sessionPPLEstimate,
     });
 
     discardSession();
@@ -209,6 +250,13 @@ function WorkoutScreen() {
   ) => {
     updateSessionPeaks(peakPower, peakVelocity, loadKg);
     if (activeAthleteId) {
+      const athlete = getAthleteById(activeAthleteId);
+      const prevHistoricalPeak = athlete?.historicalPeakPower ?? null;
+      const beaten =
+        prevHistoricalPeak === null || peakPower > prevHistoricalPeak;
+      if (beaten) {
+        markHistoricalPeakBeaten({ powerW: peakPower, loadKg });
+      }
       updateHistoricalPeak(activeAthleteId, peakPower, loadKg);
     }
   };
@@ -303,6 +351,7 @@ function WorkoutScreen() {
       isSaving={isSaving}
       showEndSession={Boolean(sessionId) && sprintIds.length > 0}
       sessionId={sessionId}
+      sessionMode={sessionMode}
       loadSuggestionsEnabled={loadSuggestionsEnabled}
       toggleLogging={toggleLogging}
       onEndSession={() => void handleEndSession()}
@@ -388,11 +437,18 @@ function SaveSprintModal({
 function LoadRow({
   sessionId,
   loadSuggestionsEnabled,
+  sessionMode,
 }: {
   sessionId: string | null;
   loadSuggestionsEnabled: boolean;
+  sessionMode: PowerProfileSessionMode;
 }) {
-  const showRecommendation = Boolean(sessionId) && loadSuggestionsEnabled;
+  const isTestSession =
+    sessionMode === 'test' ||
+    sessionMode === 'discovery' ||
+    sessionMode === 'targeted_retest';
+  const showRecommendation =
+    Boolean(sessionId) && (loadSuggestionsEnabled || isTestSession);
 
   if (showRecommendation) {
     return (
@@ -411,6 +467,7 @@ function WorkoutContent({
   isSaving,
   showEndSession,
   sessionId,
+  sessionMode,
   loadSuggestionsEnabled,
   toggleLogging,
   onEndSession,
@@ -422,6 +479,7 @@ function WorkoutContent({
   isSaving: boolean;
   showEndSession: boolean;
   sessionId: string | null;
+  sessionMode: PowerProfileSessionMode;
   loadSuggestionsEnabled: boolean;
   toggleLogging: () => void;
   onEndSession: () => void;
@@ -448,6 +506,7 @@ function WorkoutContent({
             <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
             <LoadRow
               sessionId={sessionId}
+              sessionMode={sessionMode}
               loadSuggestionsEnabled={loadSuggestionsEnabled}
             />
             {showEndSession ? (

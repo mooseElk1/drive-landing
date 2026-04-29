@@ -371,6 +371,20 @@ export async function getWorkoutEntries(params?: {
   );
 }
 
+/** Batch-resolve workouts by id (e.g. session sprintIds). Skips missing or soft-deleted entries. */
+export async function getWorkoutEntriesByIds(
+  ids: string[]
+): Promise<WorkoutEntry[]> {
+  const db = await readWorkoutDatabase();
+  const out: WorkoutEntry[] = [];
+  for (const id of ids) {
+    const entry = db.workouts[id];
+    if (!entry || entry.deletedAt) continue;
+    out.push(entry);
+  }
+  return out;
+}
+
 /**
  * Delete a workout from the file system and database
  */

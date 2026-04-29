@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import type { AthleteProfile } from '../types/athlete-profile';
+import type { AthleteProfile, PPLRevision } from '../types/athlete-profile';
 import { mmkvStorage } from './mmkv-storage';
 
 type AthleteProfileState = {
@@ -20,6 +20,8 @@ type AthleteProfileState = {
     peakPower: number,
     loadKg: number
   ) => void;
+
+  commitPPLRevision: (athleteId: string, revision: PPLRevision) => void;
 };
 
 export const useAthleteProfileStore = create<AthleteProfileState>()(
@@ -65,6 +67,22 @@ export const useAthleteProfileStore = create<AthleteProfileState>()(
             ...athlete,
             historicalPeakPower: peakPower,
             historicalPeakPowerLoad: loadKg,
+            updatedAt: Date.now(),
+          };
+          const next = [...state.athletes];
+          next[idx] = updated;
+          return { athletes: next };
+        }),
+
+      commitPPLRevision: (athleteId, revision) =>
+        set((state) => {
+          const idx = state.athletes.findIndex((a) => a.id === athleteId);
+          if (idx === -1) return state;
+          const athlete = state.athletes[idx]!;
+          const updated: AthleteProfile = {
+            ...athlete,
+            currentPPL: revision,
+            pplHistory: [...athlete.pplHistory, revision],
             updatedAt: Date.now(),
           };
           const next = [...state.athletes];

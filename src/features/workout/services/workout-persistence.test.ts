@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system';
 import {
   atomicWrite,
   createEmptyDatabaseSerializable,
+  getWorkoutEntriesByIds,
   initializeWorkoutDatabase,
   loadWorkout,
   persistWorkout,
@@ -306,6 +307,63 @@ test('persistWorkout writes workout file and updates DB', async () => {
   expect(persistedWorkout.sprintAnalysis?.summary?.driveCount).toBe(1);
   // Result DB should include one workout
   expect(resultDb.metadata.totalWorkouts).toBe(1);
+});
+
+test('getWorkoutEntriesByIds returns entries in request order and skips missing or deleted', async () => {
+  const t = new Date().toISOString();
+  const entry = (id: string, extra?: Record<string, unknown>) => ({
+    id,
+    name: id,
+    date: t,
+    duration: 1,
+    type: WorkoutType.GENERAL,
+    filePath: `/mock/doc/data/${id}.json`,
+    createdAt: t,
+    updatedAt: t,
+    ...extra,
+  });
+
+  const fileContent = {
+    workouts: {
+      b: entry('b'),
+      a: entry('a'),
+      deleted: entry('deleted', { deletedAt: t }),
+    },
+    metadata: {
+      version: '1.0.0',
+      createdAt: t,
+      lastUpdated: t,
+      totalWorkouts: 3,
+    },
+  };
+
+  mockedFs.__mock.dirs.add('/mock/doc/data');
+  mockedFs.__mock.files.set(
+    '/mock/doc/data/file-db.json',
+    JSON.stringify(fileContent)
+  );
+
+  const rows = await getWorkoutEntriesByIds([
+    'a',
+    'no_such_id',
+    'b',
+    'deleted',
+    'a',
+  ]);
+
+  expect(rows.map((w) => w.id)).toEqual(['a', 'b', 'a']);
+  expect(rows[0]!.date instanceof Date).toBe(true);
+});
+
+test('getWorkoutEntriesByIds returns empty array for empty id list', async () => {
+  const fileContent = createEmptyDatabaseSerializable();
+  mockedFs.__mock.dirs.add('/mock/doc/data');
+  mockedFs.__mock.files.set(
+    '/mock/doc/data/file-db.json',
+    JSON.stringify(fileContent)
+  );
+
+  await expect(getWorkoutEntriesByIds([])).resolves.toEqual([]);
 });
 
 test('loadWorkout reconstructs WorkoutClass from stored JSON', async () => {
