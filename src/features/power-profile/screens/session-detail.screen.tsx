@@ -29,6 +29,7 @@ import {
 } from '../services/power-profile-persistence';
 import { classifyLoad } from '../services/zone-calculator-service';
 import { usePowerSessionStore } from '../store/power-session-store';
+import { resolveChartAnchor } from '../utils/resolve-chart-anchor';
 
 type SessionDetailState =
   | { status: 'loading' }
@@ -177,13 +178,12 @@ export function SessionDetailScreen(): React.ReactElement {
   }
 
   const athlete = state.athleteId ? getAthleteById(state.athleteId) : null;
-  const pplLoadKg = athlete?.currentPPL?.pplLoadKg ?? 0;
-  const pplPeakPowerW = athlete?.currentPPL?.peakPowerW ?? 0;
+  const { anchorLoadKg, anchorPeakPowerW } = resolveChartAnchor(athlete);
 
   const points: ChartPoint[] = state.sprintEntries.map((e) => {
     const loadKg = e.metrics?.loadKg ?? 0;
     const zoneName =
-      pplLoadKg > 0 ? zoneNameForLoad(loadKg, pplLoadKg) : undefined;
+      anchorLoadKg > 0 ? zoneNameForLoad(loadKg, anchorLoadKg) : undefined;
     return {
       id: e.id,
       loadKg,
@@ -259,13 +259,13 @@ export function SessionDetailScreen(): React.ReactElement {
         <LoadVelocityChart
           width={340}
           height={240}
-          pplLoadKg={pplLoadKg}
-          peakPowerW={pplPeakPowerW}
+          pplLoadKg={anchorLoadKg}
+          peakPowerW={anchorPeakPowerW}
           points={points}
           selectedPointId={selectedSprintId}
           onPointPress={setSelectedSprintId}
         />
-        {pplLoadKg <= 0 ? (
+        {anchorLoadKg <= 0 ? (
           <Text className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
             {'Establish PPL to see training zones'}
           </Text>
@@ -279,8 +279,8 @@ export function SessionDetailScreen(): React.ReactElement {
             entry={e}
             selected={selectedSprintId === e.id}
             selectedColor={
-              pplLoadKg > 0
-                ? zoneAccentColorForLoad(e.metrics?.loadKg ?? 0, pplLoadKg)
+              anchorLoadKg > 0
+                ? zoneAccentColorForLoad(e.metrics?.loadKg ?? 0, anchorLoadKg)
                 : colors.primary[400]
             }
             onPress={() => setSelectedSprintId(e.id)}

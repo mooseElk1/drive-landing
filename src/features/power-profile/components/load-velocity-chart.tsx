@@ -29,6 +29,7 @@ export type ChartPoint = {
 };
 
 export type LoadVelocityChartProps = {
+  /** Profile anchor load (PPL load or historical fallback). Used for model + zones. */
   pplLoadKg: number;
   peakPowerW: number;
   points: ChartPoint[];
@@ -36,6 +37,8 @@ export type LoadVelocityChartProps = {
   onPointPress?: (id: string | null) => void;
   width: number;
   height?: number;
+  /** `profile`: x-axis emphasizes the theoretical domain; expands if points exceed it. */
+  xDomainMode?: 'auto' | 'profile';
 };
 
 type ZoneBand = {
@@ -122,6 +125,7 @@ export function LoadVelocityChart({
   onPointPress,
   width,
   height = 260,
+  xDomainMode = 'auto',
 }: LoadVelocityChartProps): React.ReactElement {
   const padding = 28;
   const innerW = Math.max(1, width - padding * 2);
@@ -145,14 +149,21 @@ export function LoadVelocityChart({
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
 
   const maxLoadFromPoints = loadVals.length ? Math.max(...loadVals) : 0;
-  const xMax =
-    model && Number.isFinite(model.loadMax)
-      ? Math.max(
-          maxLoadFromPoints * 1.15,
-          pplLoadKg * 2.2,
-          model.loadMax * 1.02
-        )
-      : Math.max(maxLoadFromPoints * 1.15, pplLoadKg * 2.2, 1);
+  let xMax: number;
+  if (model && Number.isFinite(model.loadMax)) {
+    if (xDomainMode === 'profile') {
+      const xMaxBase = model.loadMax * 1.02;
+      xMax = Math.max(xMaxBase, maxLoadFromPoints * 1.15, 1);
+    } else {
+      xMax = Math.max(
+        maxLoadFromPoints * 1.15,
+        pplLoadKg * 2.2,
+        model.loadMax * 1.02
+      );
+    }
+  } else {
+    xMax = Math.max(maxLoadFromPoints * 1.15, pplLoadKg * 2.2, 1);
+  }
 
   const velExt = extent(
     velVals.length ? velVals : model ? [0, model.v0] : [0, 1]

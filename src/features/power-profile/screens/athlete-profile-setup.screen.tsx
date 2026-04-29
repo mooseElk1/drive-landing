@@ -13,6 +13,7 @@ import { translate } from '@/lib/i18n/utils';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
 import type { AthleteProfile } from '../types/athlete-profile';
+import { resolveChartAnchor } from '../utils/resolve-chart-anchor';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -70,6 +71,7 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
 
   const athlete = athletes[0] ?? null;
   const isCreateMode = !athlete;
+  const chartAnchor = resolveChartAnchor(athlete);
   const [chartPoints, setChartPoints] = React.useState<
     React.ComponentProps<typeof LoadVelocityChart>['points']
   >([]);
@@ -205,8 +207,9 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
                 width={Math.min(340, width - 32)}
                 height={260}
                 points={chartPoints}
-                pplLoadKg={athlete.currentPPL?.pplLoadKg ?? 0}
-                peakPowerW={athlete.currentPPL?.peakPowerW ?? 0}
+                pplLoadKg={chartAnchor.anchorLoadKg}
+                peakPowerW={chartAnchor.anchorPeakPowerW}
+                xDomainMode="profile"
               />
             </View>
           ) : (
