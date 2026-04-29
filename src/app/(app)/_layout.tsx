@@ -1,10 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import {
-  SplashScreen,
-  Tabs,
-  useLocalSearchParams,
-  useRouter,
-} from 'expo-router';
+import { SplashScreen, Tabs, useRouter } from 'expo-router';
 import React, { useCallback, useEffect } from 'react';
 import { Pressable, Text } from 'react-native';
 
@@ -23,7 +18,6 @@ const headerLeftButtonStyle = { marginLeft: 12 } as const;
 
 export default function TabLayout() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ sessionId?: string | string[] }>();
   const hasAthlete = useAthleteProfileStore((s) => s.athletes.length > 0);
   const hideSplash = useCallback(async () => {
     await SplashScreen.hideAsync();
@@ -118,34 +112,6 @@ export default function TabLayout() {
         options={{
           href: null,
           headerShown: true,
-          headerLeft: ({ tintColor }) => {
-            const sessionId = Array.isArray(params.sessionId)
-              ? params.sessionId[0]
-              : params.sessionId;
-            const onBack = () => {
-              if (sessionId) {
-                router.replace({
-                  pathname: '/session/[id]',
-                  params: { id: sessionId },
-                });
-                return;
-              }
-              router.replace('/workout-list');
-            };
-            return (
-              <Pressable
-                onPress={onBack}
-                hitSlop={10}
-                style={headerLeftButtonStyle}
-              >
-                <Text
-                  style={{ color: tintColor, fontSize: 16, fontWeight: '600' }}
-                >
-                  {translate('powerProfile.sessionDetail.back')}
-                </Text>
-              </Pressable>
-            );
-          },
         }}
       />
       <Tabs.Screen
