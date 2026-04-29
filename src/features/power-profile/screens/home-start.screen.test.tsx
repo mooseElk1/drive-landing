@@ -16,8 +16,10 @@ jest.mock('../store/power-session-store', () => ({
   usePowerSessionStore: (selector: (s: unknown) => unknown) =>
     selector({
       sessionId: null,
+      sprintIds: [],
       loadSuggestionsEnabled: true,
       startSession: mockStartSession,
+      discardSession: jest.fn(),
     }),
 }));
 

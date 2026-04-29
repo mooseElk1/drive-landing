@@ -11,8 +11,10 @@ import { usePowerSessionStore } from '../store/power-session-store';
 
 function extractSuggestedKg(rec: LoadRecommendation): number | null {
   if (rec.kind === 'zone_target') return rec.suggestedKg;
+  if (rec.kind === 'training_peak_nudge') return rec.suggestedKg;
   if (rec.kind === 'next_sprint') return rec.suggestedKg;
   if (rec.kind === 'first_sprint_start') return rec.suggestedKg;
+  if (rec.kind === 'discovery_start') return rec.loadKg;
   return null;
 }
 
@@ -25,6 +27,12 @@ export function useLoadRecommendation(): {
   const targetZone = usePowerSessionStore((s) => s.targetZone);
   const loadSuggestionsEnabled = usePowerSessionStore(
     (s) => s.loadSuggestionsEnabled
+  );
+  const newHistoricalPeakThisSession = usePowerSessionStore(
+    (s) => s.newHistoricalPeakThisSession
+  );
+  const newHistoricalPeakLoadKg = usePowerSessionStore(
+    (s) => s.newHistoricalPeakLoadKg
   );
   const lastSprintPowerW = usePowerSessionStore((s) => s.lastSprintPowerW);
   const secondLastSprintPowerW = usePowerSessionStore(
@@ -39,16 +47,25 @@ export function useLoadRecommendation(): {
 
   const athlete = activeAthleteId ? getAthleteById(activeAthleteId) : null;
   const pplLoadKg = athlete?.currentPPL?.pplLoadKg ?? null;
+  const bodyWeightKg = athlete?.bodyWeightKg ?? null;
+
+  const isTestSession =
+    sessionMode === 'test' ||
+    sessionMode === 'discovery' ||
+    sessionMode === 'targeted_retest';
 
   const recommendation: LoadRecommendation | null =
-    sessionId && loadSuggestionsEnabled
+    sessionId && (isTestSession || loadSuggestionsEnabled)
       ? getLoadRecommendation({
           sessionMode,
           currentLoadKg,
           pplLoadKg,
+          bodyWeightKg,
           targetZone,
           lastSprintPowerW,
           secondLastSprintPowerW,
+          newHistoricalPeakThisSession,
+          newHistoricalPeakLoadKg,
         })
       : null;
 

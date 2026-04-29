@@ -1,4 +1,11 @@
 import { TrainingZone, type ZonePrescription } from '../types/training-zones';
+import { computeDiscoveryOpenerLoad } from './discovery-test-protocol-service';
+import type { TestPhase } from './ppl-test-protocol-service';
+import {
+  computePplTestNextLoad,
+  computePplTestOpenerLoad,
+} from './ppl-test-protocol-service';
+import { computeTrainingPeakNudge } from './training-peak-nudge-service';
 import { computeZonePrescription } from './zone-calculator-service';
 
 export type LoadSuggestionMode = 'discovery' | 'training';
@@ -167,12 +174,15 @@ export type LoadRecommendation =
       suggestedKg: number;
       rationale: string;
     }
+  | { kind: 'training_peak_nudge'; suggestedKg: number; rationale: string }
   | {
       kind: 'next_sprint';
       suggestedKg: number;
       zone: TrainingZone | null;
       rationale: string;
+      phase: TestPhase;
     }
+  | { kind: 'discovery_start'; loadKg: number | null; rationale: string }
   | { kind: 'no_ppl_nudge' }
   | { kind: 'first_sprint_start'; suggestedKg: number | null };
 
@@ -180,9 +190,12 @@ export type LoadRecommendationInput = {
   sessionMode: 'training' | 'test' | 'discovery' | 'targeted_retest';
   currentLoadKg: number;
   pplLoadKg: number | null;
+  bodyWeightKg: number | null;
   targetZone: TrainingZone | null;
   lastSprintPowerW: number | null;
   secondLastSprintPowerW: number | null;
+  newHistoricalPeakThisSession: boolean;
+  newHistoricalPeakLoadKg: number | null;
 };
 
 function zoneSuggestedLoad(
@@ -201,6 +214,35 @@ function zoneSuggestedLoad(
   return roundToOneDecimal((band.minLoadKg + max) / 2);
 }
 
+function getTrainingLoadRecommendation(
+  input: LoadRecommendationInput
+): LoadRecommendation {
+  if (!input.pplLoadKg) return { kind: 'no_ppl_nudge' };
+
+  if (input.newHistoricalPeakThisSession && input.newHistoricalPeakLoadKg) {
+    const nudge = computeTrainingPeakNudge(input.newHistoricalPeakLoadKg);
+    return {
+      kind: 'training_peak_nudge',
+      suggestedKg: nudge.suggestedKg,
+      rationale: nudge.rationale,
+    };
+  }
+
+  const prescription = computeZonePrescription(input.pplLoadKg);
+  const zone = input.targetZone ?? TrainingZone.PEAK_POWER;
+  const band = prescription[zone];
+  const suggestedKg = zoneSuggestedLoad(zone, input.pplLoadKg, prescription);
+
+  return {
+    kind: 'zone_target',
+    zone,
+    minKg: band.minLoadKg,
+    maxKg: Number.isFinite(band.maxLoadKg) ? band.maxLoadKg : suggestedKg,
+    suggestedKg,
+    rationale: `Target: ${zone.replace(/_/g, ' ')} zone`,
+  };
+}
+
 export function getLoadRecommendation(
   input: LoadRecommendationInput
 ): LoadRecommendation {
@@ -209,45 +251,42 @@ export function getLoadRecommendation(
     input.sessionMode === 'discovery' ||
     input.sessionMode === 'targeted_retest';
 
-  // Training mode: hard gate — PPL required
   if (!isTestMode) {
-    if (!input.pplLoadKg) return { kind: 'no_ppl_nudge' };
+    return getTrainingLoadRecommendation(input);
+  }
 
-    const prescription = computeZonePrescription(input.pplLoadKg);
-    const zone = input.targetZone ?? TrainingZone.PEAK_POWER;
-    const band = prescription[zone];
-    const suggestedKg = zoneSuggestedLoad(zone, input.pplLoadKg, prescription);
-
+  // Discovery mode — BW-based opener
+  if (input.sessionMode === 'discovery' && input.lastSprintPowerW === null) {
+    const opener = computeDiscoveryOpenerLoad(input.bodyWeightKg);
     return {
-      kind: 'zone_target',
-      zone,
-      minKg: band.minLoadKg,
-      maxKg: Number.isFinite(band.maxLoadKg) ? band.maxLoadKg : suggestedKg,
-      suggestedKg,
-      rationale: `Target: ${zone.replace(/_/g, ' ')} zone`,
+      kind: 'discovery_start',
+      loadKg: opener.kind === 'numeric' ? opener.loadKg : null,
+      rationale:
+        opener.kind === 'numeric'
+          ? 'Start at ~30% bodyweight.'
+          : 'Start at ~30% of your bodyweight (calculate manually).',
     };
   }
 
-  // Test / Discovery mode
+  // Post-PPL tests — PPL-based opener
   if (input.lastSprintPowerW === null) {
-    // No sprint yet — suggest a starting load below the expected curve peak
-    const suggestedKg = input.pplLoadKg
-      ? roundToOneDecimal(input.pplLoadKg * 0.65)
-      : null;
-    return { kind: 'first_sprint_start', suggestedKg };
+    return {
+      kind: 'first_sprint_start',
+      suggestedKg: computePplTestOpenerLoad(input.pplLoadKg),
+    };
   }
 
-  // After at least one sprint — use ascending/peak/descending limb logic
-  const suggestion = computeDiscoveryNextLoad({
+  const next = computePplTestNextLoad({
     currentLoadKg: input.currentLoadKg,
-    previousPowerW: input.secondLastSprintPowerW,
-    currentPowerW: input.lastSprintPowerW,
+    lastSprintPowerW: input.lastSprintPowerW,
+    secondLastSprintPowerW: input.secondLastSprintPowerW,
   });
 
   return {
     kind: 'next_sprint',
-    suggestedKg: suggestion.nextLoadKg,
-    zone: suggestion.zone,
-    rationale: suggestion.rationale,
+    suggestedKg: next.suggestedKg,
+    zone: null,
+    rationale: next.rationale,
+    phase: next.phase,
   };
 }

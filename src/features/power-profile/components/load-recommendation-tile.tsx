@@ -67,6 +67,39 @@ function ZoneTargetView({
   );
 }
 
+function TrainingPeakNudgeView({
+  rec,
+  labelColor,
+  valueColor,
+  unitColor,
+  mutedColor,
+}: {
+  rec: Extract<LoadRecommendation, { kind: 'training_peak_nudge' }>;
+  labelColor: string;
+  valueColor: string;
+  unitColor: string;
+  mutedColor: string;
+}) {
+  const headerColor = colors.primary[400];
+  return (
+    <>
+      <Text style={[styles.zoneBadge, { color: headerColor }]}>
+        {'NEW PEAK'}
+      </Text>
+      <Text style={[styles.label, { color: labelColor }]}>{'SUGGESTED'}</Text>
+      <RNView style={styles.valueRow}>
+        <Text style={[styles.value, { color: valueColor }]}>
+          {rec.suggestedKg.toFixed(1)}
+        </Text>
+        <Text style={[styles.unit, { color: unitColor }]}>{'KG'}</Text>
+      </RNView>
+      <Text style={[styles.rangeText, { color: mutedColor }]}>
+        {rec.rationale}
+      </Text>
+    </>
+  );
+}
+
 function NextSprintView({
   rec,
   labelColor,
@@ -80,11 +113,19 @@ function NextSprintView({
   unitColor: string;
   mutedColor: string;
 }) {
-  const zoneColor = rec.zone ? ZONE_COLORS[rec.zone] : labelColor;
-  const zoneLabel = rec.zone ? ZONE_LABELS[rec.zone] : null;
+  const testHeaderColor = colors.primary[400];
+  const phaseCue =
+    rec.phase === 'ascending'
+      ? 'Power rising — go heavier'
+      : rec.phase === 'near_peak'
+        ? 'Near peak — smaller increase'
+        : 'Power dropped — step back';
 
   return (
     <>
+      <Text style={[styles.zoneBadge, { color: testHeaderColor }]}>
+        {'TEST'}
+      </Text>
       <Text style={[styles.label, { color: labelColor }]}>{'NEXT SPRINT'}</Text>
       <RNView style={styles.valueRow}>
         <Text style={[styles.value, { color: valueColor }]}>
@@ -92,14 +133,52 @@ function NextSprintView({
         </Text>
         <Text style={[styles.unit, { color: unitColor }]}>{'KG'}</Text>
       </RNView>
-      {zoneLabel ? (
-        <Text style={[styles.zoneBadge, { color: zoneColor }]}>
-          {zoneLabel}
-        </Text>
-      ) : null}
+      <Text style={[styles.rangeText, { color: mutedColor }]}>{phaseCue}</Text>
       <Text style={[styles.rangeText, { color: mutedColor }]}>
         {rec.rationale}
       </Text>
+    </>
+  );
+}
+
+function DiscoveryStartView({
+  rec,
+  labelColor,
+  valueColor,
+  unitColor,
+  mutedColor,
+}: {
+  rec: Extract<LoadRecommendation, { kind: 'discovery_start' }>;
+  labelColor: string;
+  valueColor: string;
+  unitColor: string;
+  mutedColor: string;
+}) {
+  const headerColor = colors.primary[400];
+  return (
+    <>
+      <Text style={[styles.zoneBadge, { color: headerColor }]}>
+        {'DISCOVERY TEST'}
+      </Text>
+      <Text style={[styles.label, { color: labelColor }]}>{'START HERE'}</Text>
+      {rec.loadKg !== null ? (
+        <RNView style={styles.valueRow}>
+          <Text style={[styles.value, { color: valueColor }]}>
+            {rec.loadKg.toFixed(1)}
+          </Text>
+          <Text style={[styles.unit, { color: unitColor }]}>{'KG'}</Text>
+        </RNView>
+      ) : (
+        <Text style={[styles.value, { color: valueColor }]}>{'30% BW'}</Text>
+      )}
+      <Text style={[styles.rangeText, { color: mutedColor }]}>
+        {rec.rationale}
+      </Text>
+      {rec.loadKg === null ? (
+        <Text style={[styles.rangeText, { color: mutedColor }]}>
+          {'Add bodyweight in your profile for an exact load.'}
+        </Text>
+      ) : null}
     </>
   );
 }
@@ -117,8 +196,12 @@ function FirstSprintStartView({
   unitColor: string;
   mutedColor: string;
 }) {
+  const testHeaderColor = colors.primary[400];
   return (
     <>
+      <Text style={[styles.zoneBadge, { color: testHeaderColor }]}>
+        {'TEST'}
+      </Text>
       <Text style={[styles.label, { color: labelColor }]}>{'START HERE'}</Text>
       {rec.suggestedKg !== null ? (
         <RNView style={styles.valueRow}>
@@ -170,8 +253,12 @@ function RecommendationContent({
 }) {
   if (recommendation.kind === 'zone_target')
     return <ZoneTargetView rec={recommendation} {...c} />;
+  if (recommendation.kind === 'training_peak_nudge')
+    return <TrainingPeakNudgeView rec={recommendation} {...c} />;
   if (recommendation.kind === 'next_sprint')
     return <NextSprintView rec={recommendation} {...c} />;
+  if (recommendation.kind === 'discovery_start')
+    return <DiscoveryStartView rec={recommendation} {...c} />;
   if (recommendation.kind === 'first_sprint_start')
     return <FirstSprintStartView rec={recommendation} {...c} />;
   return <NoPplNudgeView mutedColor={c.mutedColor} />;
@@ -179,6 +266,7 @@ function RecommendationContent({
 
 function canApplyRecommendation(rec: LoadRecommendation): boolean {
   if (rec.kind === 'no_ppl_nudge') return false;
+  if (rec.kind === 'discovery_start' && rec.loadKg === null) return false;
   if (rec.kind === 'first_sprint_start' && rec.suggestedKg === null)
     return false;
   return true;

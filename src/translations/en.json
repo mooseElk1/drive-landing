@@ -24,6 +24,12 @@
     },
     "home": {
       "activeSession": "You have an active session in progress.",
+      "cancelSession": {
+        "confirm": "Cancel session",
+        "keep": "Keep session",
+        "message": "This session has no saved sprints and will be removed.",
+        "title": "Cancel session?"
+      },
       "createProfile": "Create athlete profile",
       "modes": {
         "test": "Test",

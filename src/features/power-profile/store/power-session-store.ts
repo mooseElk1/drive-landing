@@ -24,6 +24,9 @@ type PowerSessionState = {
   secondLastSprintPowerW: number | null;
 
   historicalPBBeatenThisSession: boolean;
+  newHistoricalPeakThisSession: boolean;
+  newHistoricalPeakPowerW: number | null;
+  newHistoricalPeakLoadKg: number | null;
 
   interruptedAt: number | null;
   endedAt: number | null;
@@ -44,6 +47,11 @@ type PowerSessionState = {
     peakVelocity: number,
     loadKg: number
   ) => void;
+
+  markHistoricalPeakBeaten: (params: {
+    powerW: number;
+    loadKg: number;
+  }) => void;
 
   setInterruptedAt: (ts: number | null) => void;
 
@@ -74,6 +82,9 @@ export const usePowerSessionStore = create<PowerSessionState>()(
       secondLastSprintPowerW: null,
 
       historicalPBBeatenThisSession: false,
+      newHistoricalPeakThisSession: false,
+      newHistoricalPeakPowerW: null,
+      newHistoricalPeakLoadKg: null,
 
       interruptedAt: null,
       endedAt: null,
@@ -99,6 +110,9 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           lastSprintPowerW: null,
           secondLastSprintPowerW: null,
           historicalPBBeatenThisSession: false,
+          newHistoricalPeakThisSession: false,
+          newHistoricalPeakPowerW: null,
+          newHistoricalPeakLoadKg: null,
           interruptedAt: null,
           endedAt: null,
         }),
@@ -132,6 +146,14 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           };
         }),
 
+      markHistoricalPeakBeaten: ({ powerW, loadKg }) =>
+        set({
+          historicalPBBeatenThisSession: true,
+          newHistoricalPeakThisSession: true,
+          newHistoricalPeakPowerW: powerW,
+          newHistoricalPeakLoadKg: loadKg,
+        }),
+
       setInterruptedAt: (ts) => set({ interruptedAt: ts }),
 
       endSession: (endedAt = Date.now()) =>
@@ -152,6 +174,9 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           lastSprintPowerW: null,
           secondLastSprintPowerW: null,
           historicalPBBeatenThisSession: false,
+          newHistoricalPeakThisSession: false,
+          newHistoricalPeakPowerW: null,
+          newHistoricalPeakLoadKg: null,
           interruptedAt: null,
           endedAt: null,
         }),

@@ -1,11 +1,13 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
+import { Alert } from 'react-native';
 
 import { Button, Checkbox, Select, Text, Tile, View } from '@/components/ui';
 import { translate } from '@/lib/i18n/utils';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
 import { usePowerSessionStore } from '../store/power-session-store';
+import type { AthleteProfile } from '../types/athlete-profile';
 import type { PowerProfileSessionMode } from '../types/power-session';
 import { TrainingZone } from '../types/training-zones';
 
@@ -14,6 +16,26 @@ function createSessionId(): string {
 }
 
 type StartMode = 'training' | 'test';
+
+function useCancelSessionHandler(discardSession: () => void) {
+  return React.useCallback(() => {
+    Alert.alert(
+      translate('powerProfile.home.cancelSession.title'),
+      translate('powerProfile.home.cancelSession.message'),
+      [
+        {
+          text: translate('powerProfile.home.cancelSession.keep'),
+          style: 'cancel',
+        },
+        {
+          text: translate('powerProfile.home.cancelSession.confirm'),
+          style: 'destructive',
+          onPress: discardSession,
+        },
+      ]
+    );
+  }, [discardSession]);
+}
 
 function HomeShell({
   children,
@@ -44,7 +66,13 @@ function NoAthleteCard({ onCreate }: { onCreate: () => void }) {
   );
 }
 
-function ActiveSessionCard({ onResume }: { onResume: () => void }) {
+function ActiveSessionCard({
+  onResume,
+  onCancel,
+}: {
+  onResume: () => void;
+  onCancel?: () => void;
+}) {
   return (
     <HomeShell>
       <Tile className="bg-white dark:bg-neutral-900">
@@ -60,6 +88,14 @@ function ActiveSessionCard({ onResume }: { onResume: () => void }) {
           label={translate('powerProfile.home.resume')}
           onPress={onResume}
         />
+        {onCancel ? (
+          <Button
+            variant="destructive"
+            testID="home-cancel-session"
+            label={translate('powerProfile.home.cancelSession.confirm')}
+            onPress={onCancel}
+          />
+        ) : null}
       </Tile>
     </HomeShell>
   );
@@ -210,7 +246,9 @@ function useHomeStores() {
     (s) => s.setActiveAthleteId
   );
   const sessionId = usePowerSessionStore((s) => s.sessionId);
+  const sprintIds = usePowerSessionStore((s) => s.sprintIds);
   const startSession = usePowerSessionStore((s) => s.startSession);
+  const discardSession = usePowerSessionStore((s) => s.discardSession);
   const loadSuggestionsEnabled = usePowerSessionStore(
     (s) => s.loadSuggestionsEnabled
   );
@@ -223,7 +261,9 @@ function useHomeStores() {
     athlete,
     hasAthlete,
     sessionId,
+    sprintIds,
     startSession,
+    discardSession,
     activeAthleteId,
     setActiveAthleteId,
     loadSuggestionsEnabled,
@@ -254,6 +294,49 @@ function useTrainingZoneOptions() {
   );
 }
 
+function useHomeStartFormState(params: {
+  athlete: AthleteProfile | null;
+  loadSuggestionsEnabled: boolean;
+}) {
+  const { athlete, loadSuggestionsEnabled } = params;
+
+  const defaultZone: TrainingZone | null = useDefaultZone(
+    athlete
+      ? { historicalPeakPower: athlete.historicalPeakPower ?? null }
+      : null
+  );
+
+  const [mode, setMode] = React.useState<StartMode>('training');
+  const [selectedZone, setSelectedZone] = React.useState<string | number>(
+    defaultZone ?? 'none'
+  );
+  const [suggestionsOn, setSuggestionsOn] = React.useState<boolean>(
+    loadSuggestionsEnabled
+  );
+
+  React.useEffect(() => {
+    if (defaultZone && selectedZone === 'none') setSelectedZone(defaultZone);
+  }, [defaultZone, selectedZone]);
+
+  const zoneOptions = useTrainingZoneOptions();
+
+  const peakPowerHint = buildPeakPowerHint({
+    historicalPeakPower: athlete?.historicalPeakPower,
+    historicalPeakPowerLoad: athlete?.historicalPeakPowerLoad,
+  });
+
+  return {
+    mode,
+    setMode,
+    selectedZone,
+    setSelectedZone,
+    suggestionsOn,
+    setSuggestionsOn,
+    zoneOptions,
+    peakPowerHint,
+  };
+}
+
 function useStartHandler(params: {
   router: ReturnType<typeof useRouter>;
   athleteId: string | null;
@@ -280,13 +363,15 @@ function useStartHandler(params: {
         athleteId: params.athleteId,
         sessionMode,
         targetZone:
-          sessionMode === 'test'
+          sessionMode === 'test' || sessionMode === 'discovery'
             ? null
             : params.selectedZone === 'none'
               ? null
               : (params.selectedZone as TrainingZone),
         loadSuggestionsEnabled:
-          sessionMode === 'test' ? false : params.suggestionsOn,
+          sessionMode === 'test' || sessionMode === 'discovery'
+            ? true
+            : params.suggestionsOn,
       });
 
       params.router.push('/workout');
@@ -297,30 +382,10 @@ function useStartHandler(params: {
 
 function useHomeStartModel() {
   const stores = useHomeStores();
-
-  const defaultZone: TrainingZone | null = useDefaultZone(
-    stores.athlete
-      ? { historicalPeakPower: stores.athlete.historicalPeakPower ?? null }
-      : null
-  );
-
-  const [mode, setMode] = React.useState<StartMode>('training');
-  const [selectedZone, setSelectedZone] = React.useState<string | number>(
-    defaultZone ?? 'none'
-  );
-  const [suggestionsOn, setSuggestionsOn] = React.useState<boolean>(
-    stores.loadSuggestionsEnabled
-  );
-
-  React.useEffect(() => {
-    if (defaultZone && selectedZone === 'none') setSelectedZone(defaultZone);
-  }, [defaultZone, selectedZone]);
-
-  const zoneOptions = useTrainingZoneOptions();
-
-  const peakPowerHint = buildPeakPowerHint({
-    historicalPeakPower: stores.athlete?.historicalPeakPower,
-    historicalPeakPowerLoad: stores.athlete?.historicalPeakPowerLoad,
+  const hasPpl = stores.athlete?.currentPPL != null;
+  const form = useHomeStartFormState({
+    athlete: stores.athlete,
+    loadSuggestionsEnabled: stores.loadSuggestionsEnabled,
   });
 
   const athleteId = stores.activeAthleteId ?? stores.athlete?.id ?? null;
@@ -330,23 +395,29 @@ function useHomeStartModel() {
     hasActiveAthleteId: Boolean(stores.activeAthleteId),
     setActiveAthleteId: stores.setActiveAthleteId,
     startSession: stores.startSession,
-    selectedZone,
-    suggestionsOn,
+    selectedZone: form.selectedZone,
+    suggestionsOn: form.suggestionsOn,
   });
+
+  const hasSprints = stores.sprintIds.length > 0;
+  const cancelSession = useCancelSessionHandler(stores.discardSession);
 
   return {
     router: stores.router,
     hasAthlete: stores.hasAthlete,
     sessionId: stores.sessionId,
-    mode,
-    setMode,
-    selectedZone,
-    setSelectedZone,
-    zoneOptions,
-    suggestionsOn,
-    setSuggestionsOn,
-    peakPowerHint,
+    hasSprints,
+    mode: form.mode,
+    setMode: form.setMode,
+    selectedZone: form.selectedZone,
+    setSelectedZone: form.setSelectedZone,
+    zoneOptions: form.zoneOptions,
+    suggestionsOn: form.suggestionsOn,
+    setSuggestionsOn: form.setSuggestionsOn,
+    peakPowerHint: form.peakPowerHint,
     start,
+    hasPpl,
+    cancelSession,
   };
 }
 
@@ -358,7 +429,12 @@ function HomeStartView(model: ReturnType<typeof useHomeStartModel>) {
   }
 
   if (model.sessionId) {
-    return <ActiveSessionCard onResume={() => model.router.push('/workout')} />;
+    return (
+      <ActiveSessionCard
+        onResume={() => model.router.push('/workout')}
+        onCancel={model.hasSprints ? undefined : model.cancelSession}
+      />
+    );
   }
 
   return (
@@ -384,7 +460,9 @@ function HomeStartView(model: ReturnType<typeof useHomeStartModel>) {
             onStart={() => model.start('training')}
           />
         ) : (
-          <TestForm onStart={() => model.start('test')} />
+          <TestForm
+            onStart={() => model.start(model.hasPpl ? 'test' : 'discovery')}
+          />
         )}
       </Tile>
     </HomeShell>
