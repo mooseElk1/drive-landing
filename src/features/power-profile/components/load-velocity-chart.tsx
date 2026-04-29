@@ -1,4 +1,5 @@
 /* eslint-disable max-lines-per-function */
+import { useColorScheme } from 'nativewind';
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Svg, {
@@ -50,8 +51,28 @@ type ZoneBand = {
   stroke: string;
 };
 
+type Rgb = { r: number; g: number; b: number };
+
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
+}
+
+function parseRgba(input: string): { rgb: Rgb; alpha: number } | null {
+  const m =
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([0-9.]+))?\s*\)/.exec(
+      input
+    );
+  if (!m) return null;
+  const r = Number(m[1]);
+  const g = Number(m[2]);
+  const b = Number(m[3]);
+  const alpha = m[4] != null ? Number(m[4]) : 1;
+  if (![r, g, b, alpha].every(Number.isFinite)) return null;
+  return { rgb: { r, g, b }, alpha: clamp(alpha, 0, 1) };
+}
+
+function withAlpha(rgb: Rgb, alpha: number): string {
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${clamp(alpha, 0, 1)})`;
 }
 
 function formatMaybeNumber(n: number | null | undefined, digits = 2): string {
@@ -127,6 +148,8 @@ export function LoadVelocityChart({
   height = 260,
   xDomainMode = 'auto',
 }: LoadVelocityChartProps): React.ReactElement {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const padding = 28;
   const innerW = Math.max(1, width - padding * 2);
   const innerH = Math.max(1, height - padding * 2);
@@ -200,10 +223,20 @@ export function LoadVelocityChart({
   const clearSelection = () => onPointPress?.(null);
   const selectPoint = (id: string) => onPointPress?.(id);
 
-  const axisColor = colors.neutral[400];
-  const gridColor = 'rgba(255,255,255,0.08)';
+  const axisColor = isDark ? colors.neutral[400] : colors.neutral[700];
+  const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
   const velColor = colors.secondary[500];
   const powerColor = colors.primary[400];
+  const pplLineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)';
+
+  const chartBg = isDark ? colors.charcoal[900] : colors.white;
+  const chartBorder = isDark ? 'rgba(255,255,255,0.12)' : colors.neutral[200];
+
+  const tooltipBg = isDark ? 'rgba(32,32,32,0.92)' : 'rgba(255,255,255,0.96)';
+  const tooltipBorder = isDark ? 'rgba(255,255,255,0.14)' : colors.neutral[200];
+  const tooltipTitleColor = isDark ? colors.neutral[300] : colors.neutral[700];
+  const tooltipValueColor = isDark ? colors.neutral[50] : colors.neutral[900];
+  const tooltipSubColor = isDark ? colors.neutral[200] : colors.neutral[700];
 
   const curvePowerPath =
     model != null
@@ -230,8 +263,16 @@ export function LoadVelocityChart({
 
   const pplX = model != null ? xScale(model.pplLoadKg) : null;
 
+  const blendHalfWidthKg = Number.isFinite(pplLoadKg) ? pplLoadKg * 0.1 : 0;
+  const blendSteps = 20;
+
   return (
-    <View style={[styles.container, { width }]}>
+    <View
+      style={[
+        styles.container,
+        { width, backgroundColor: chartBg, borderColor: chartBorder },
+      ]}
+    >
       <Pressable style={styles.pressLayer} onPress={clearSelection}>
         <Svg width={width} height={height}>
           <Rect x={0} y={0} width={width} height={height} fill="transparent" />
@@ -264,6 +305,59 @@ export function LoadVelocityChart({
                 </SvgText>
               </G>
             );
+          })}
+
+          {/* Zone blends (stepped cross-fade) */}
+          {zoneBands.flatMap((a, idx) => {
+            const b = zoneBands[idx + 1];
+            if (!b) return [];
+            if (
+              !Number.isFinite(a.maxLoadKg) ||
+              !Number.isFinite(b.minLoadKg)
+            ) {
+              return [];
+            }
+
+            const parsedA = parseRgba(a.fill);
+            const parsedB = parseRgba(b.fill);
+            if (!parsedA || !parsedB) return [];
+
+            const boundaryKg = (a.maxLoadKg + b.minLoadKg) / 2;
+            const startKg = clamp(boundaryKg - blendHalfWidthKg, 0, xMax);
+            const endKg = clamp(boundaryKg + blendHalfWidthKg, 0, xMax);
+            if (!(endKg > startKg)) return [];
+
+            const startX = xScale(startKg);
+            const endX = xScale(endKg);
+            const blendW = endX - startX;
+            if (!(blendW > 0)) return [];
+
+            return Array.from({ length: blendSteps }, (_, i) => {
+              const t = blendSteps <= 1 ? 1 : i / (blendSteps - 1);
+              const segX0 = startX + blendW * (i / blendSteps);
+              const segX1 = startX + blendW * ((i + 1) / blendSteps);
+              const segW = Math.max(0, segX1 - segX0);
+              if (segW <= 0) return null;
+
+              return (
+                <G key={`${a.zone}-${b.zone}-blend-${i}`}>
+                  <Rect
+                    x={segX0}
+                    y={padding}
+                    width={segW}
+                    height={innerH}
+                    fill={withAlpha(parsedA.rgb, parsedA.alpha * (1 - t))}
+                  />
+                  <Rect
+                    x={segX0}
+                    y={padding}
+                    width={segW}
+                    height={innerH}
+                    fill={withAlpha(parsedB.rgb, parsedB.alpha * t)}
+                  />
+                </G>
+              );
+            }).filter(Boolean);
           })}
 
           {/* Grid */}
@@ -302,7 +396,7 @@ export function LoadVelocityChart({
               x2={pplX}
               y1={padding}
               y2={height - padding}
-              stroke="rgba(255,255,255,0.35)"
+              stroke={pplLineColor}
               strokeWidth={1}
               strokeDasharray="6,4"
             />
@@ -473,17 +567,19 @@ export function LoadVelocityChart({
               {
                 left: clamp(selectedX - 110, 8, Math.max(8, width - 220)),
                 top: clamp(selectedY - 72, 8, Math.max(8, height - 96)),
+                backgroundColor: tooltipBg,
+                borderColor: tooltipBorder,
               },
             ]}
           >
             <Text
-              style={styles.tooltipTitle}
+              style={[styles.tooltipTitle, { color: tooltipTitleColor }]}
             >{`Load: ${selectedPoint.loadKg.toFixed(1)} kg`}</Text>
             <Text
-              style={styles.tooltipValue}
+              style={[styles.tooltipValue, { color: tooltipValueColor }]}
             >{`${formatMaybeNumber(selectedPoint.peakVelocity, 2)} m/s`}</Text>
             <Text
-              style={styles.tooltipSub}
+              style={[styles.tooltipSub, { color: tooltipSubColor }]}
             >{`${selectedPoint.peakPowerW != null ? Math.round(selectedPoint.peakPowerW).toString() : '--'} W`}</Text>
             {selectedPoint.zoneName ? (
               <Text style={styles.tooltipZone}>{selectedPoint.zoneName}</Text>
@@ -500,9 +596,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: colors.charcoal[900],
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
   },
   pressLayer: { position: 'relative' },
   tooltip: {
@@ -511,23 +605,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: 'rgba(32,32,32,0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
   },
   tooltipTitle: {
-    color: colors.neutral[300],
     fontSize: 12,
     marginBottom: 4,
   },
   tooltipValue: {
-    color: colors.neutral[50],
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 2,
   },
   tooltipSub: {
-    color: colors.neutral[200],
     fontSize: 13,
     fontWeight: '600',
   },
