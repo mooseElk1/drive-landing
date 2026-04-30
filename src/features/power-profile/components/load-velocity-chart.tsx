@@ -35,6 +35,8 @@ export type LoadVelocityChartProps = {
   peakPowerW: number;
   points: ChartPoint[];
   bodyWeightKg?: number | null;
+  /** When provided, controls BW reference line visibility (default: false). */
+  showBodyWeightReferenceLines?: boolean;
   selectedPointId?: string | null;
   onPointPress?: (id: string | null) => void;
   width: number;
@@ -144,6 +146,7 @@ export function LoadVelocityChart({
   peakPowerW,
   points,
   bodyWeightKg = null,
+  showBodyWeightReferenceLines,
   selectedPointId = null,
   onPointPress,
   width,
@@ -152,6 +155,7 @@ export function LoadVelocityChart({
 }: LoadVelocityChartProps): React.ReactElement {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const [internalShowBwLines, setInternalShowBwLines] = React.useState(false);
   const padding = 28;
   const innerW = Math.max(1, width - padding * 2);
   const innerH = Math.max(1, height - padding * 2);
@@ -265,14 +269,17 @@ export function LoadVelocityChart({
   );
 
   const pplX = model != null ? xScale(model.pplLoadKg) : null;
-  const bw50X =
-    typeof bodyWeightKg === 'number' && Number.isFinite(bodyWeightKg)
-      ? xScale(bodyWeightKg * 0.5)
-      : null;
-  const bw100X =
-    typeof bodyWeightKg === 'number' && Number.isFinite(bodyWeightKg)
-      ? xScale(bodyWeightKg)
-      : null;
+  const bwAvailable =
+    typeof bodyWeightKg === 'number' &&
+    Number.isFinite(bodyWeightKg) &&
+    bodyWeightKg > 0;
+  const bwControlled = typeof showBodyWeightReferenceLines === 'boolean';
+  const showBwLines =
+    (bwControlled ? showBodyWeightReferenceLines : internalShowBwLines) ??
+    false;
+
+  const bw50X = bwAvailable && showBwLines ? xScale(bodyWeightKg * 0.5) : null;
+  const bw100X = bwAvailable && showBwLines ? xScale(bodyWeightKg) : null;
 
   const blendHalfWidthKg = Number.isFinite(pplLoadKg) ? pplLoadKg * 0.1 : 0;
   const blendSteps = 20;
@@ -284,6 +291,42 @@ export function LoadVelocityChart({
         { width, backgroundColor: chartBg, borderColor: chartBorder },
       ]}
     >
+      {bwAvailable && !bwControlled ? (
+        <Pressable
+          style={[
+            styles.bwToggle,
+            {
+              backgroundColor: showBwLines
+                ? isDark
+                  ? 'rgba(255,255,255,0.18)'
+                  : 'rgba(0,0,0,0.08)'
+                : isDark
+                  ? 'rgba(255,255,255,0.10)'
+                  : 'rgba(0,0,0,0.04)',
+              borderColor: showBwLines
+                ? isDark
+                  ? 'rgba(255,255,255,0.30)'
+                  : 'rgba(0,0,0,0.18)'
+                : isDark
+                  ? 'rgba(255,255,255,0.18)'
+                  : 'rgba(0,0,0,0.10)',
+            },
+          ]}
+          onPress={() => setInternalShowBwLines((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel="Toggle bodyweight reference lines"
+          testID="bw-reference-toggle"
+        >
+          <Text
+            style={[
+              styles.bwToggleText,
+              { color: isDark ? colors.neutral[100] : colors.neutral[900] },
+            ]}
+          >
+            {'BW'}
+          </Text>
+        </Pressable>
+      ) : null}
       <Pressable style={styles.pressLayer} onPress={clearSelection}>
         <Svg width={width} height={height}>
           <Rect x={0} y={0} width={width} height={height} fill="transparent" />
@@ -658,6 +701,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pressLayer: { position: 'relative' },
+  bwToggle: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  bwToggleText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
   tooltip: {
     position: 'absolute',
     width: 220,
