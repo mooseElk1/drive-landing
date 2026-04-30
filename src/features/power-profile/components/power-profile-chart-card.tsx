@@ -2,7 +2,7 @@
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { Pressable, Select, Text, Tile, View } from '@/components/ui';
+import { Pressable, SegmentedControl, Text, Tile, View } from '@/components/ui';
 import {
   type ChartPointSelection,
   getMostRecentPplTestSprintIds,
@@ -162,22 +162,6 @@ export function PowerProfileChartCard(props: {
           <Text className="text-base font-semibold">{props.title}</Text>
 
           <View className="flex-row items-center gap-2">
-            {props.mode === 'athlete' ? (
-              <View style={{ width: 132 }}>
-                <Select
-                  presentation="dropdown"
-                  value={selection}
-                  options={selectionOptions()}
-                  onSelect={(v) => {
-                    const next = v as ChartPointSelection;
-                    props.onSelectionChange?.(next);
-                    if (!props.selection) setInternalSelection(next);
-                  }}
-                  testID="chart-selection"
-                />
-              </View>
-            ) : null}
-
             {bwAvailable ? (
               <Chip
                 label="BW"
@@ -196,6 +180,21 @@ export function PowerProfileChartCard(props: {
             ) : null}
           </View>
         </View>
+
+        {props.mode === 'athlete' ? (
+          <View className="mt-3">
+            <SegmentedControl
+              value={selection}
+              options={selectionOptions()}
+              onChange={(next) => {
+                props.onSelectionChange?.(next);
+                if (!props.selection) setInternalSelection(next);
+              }}
+              size="sm"
+              testID="chart-selection"
+            />
+          </View>
+        ) : null}
       </View>
 
       <View className="mt-2">
