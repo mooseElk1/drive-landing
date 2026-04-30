@@ -15,11 +15,11 @@ export function computeZonePrescription(pplLoadKg: number): ZonePrescription {
 
   // Rule ranges per framework plan.
   // SPEED_STRENGTH: <60% PPL
-  // PEAK_POWER: 80–120% PPL
+  // PEAK_POWER: 70–120% PPL
   // STRENGTH_SPEED: 140–180% PPL
   // OVERLOAD: >200% PPL
   const speedStrengthMax = roundToOneDecimal(pplLoadKg * 0.6);
-  const peakPowerMin = roundToOneDecimal(pplLoadKg * 0.8);
+  const peakPowerMin = roundToOneDecimal(pplLoadKg * 0.7);
   const peakPowerMax = roundToOneDecimal(pplLoadKg * 1.2);
   const strengthSpeedMin = roundToOneDecimal(pplLoadKg * 1.4);
   const strengthSpeedMax = roundToOneDecimal(pplLoadKg * 1.8);
@@ -55,13 +55,13 @@ export function classifyLoad(loadKg: number, pplLoadKg: number): TrainingZone {
 
   // Use inclusive bands where defined; gaps fall back to nearest relevant band.
   if (ratio < 0.6) return TrainingZone.SPEED_STRENGTH;
-  if (ratio >= 0.8 && ratio <= 1.2) return TrainingZone.PEAK_POWER;
+  if (ratio >= 0.7 && ratio <= 1.2) return TrainingZone.PEAK_POWER;
   if (ratio >= 1.4 && ratio <= 1.8) return TrainingZone.STRENGTH_SPEED;
   if (ratio > 2.0) return TrainingZone.OVERLOAD;
 
   // Bridge gaps:
-  // 0.6–0.8 → closer to SPEED_STRENGTH vs PEAK_POWER; treat as SPEED_STRENGTH.
-  if (ratio >= 0.6 && ratio < 0.8) return TrainingZone.SPEED_STRENGTH;
+  // 0.6–0.7 → closer to SPEED_STRENGTH vs PEAK_POWER; treat as SPEED_STRENGTH.
+  if (ratio >= 0.6 && ratio < 0.7) return TrainingZone.SPEED_STRENGTH;
   // 1.2–1.4 → treat as PEAK_POWER (still close to peak).
   if (ratio > 1.2 && ratio < 1.4) return TrainingZone.PEAK_POWER;
   // 1.8–2.0 → treat as STRENGTH_SPEED (heavy but not overload).

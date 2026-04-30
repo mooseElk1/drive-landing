@@ -20,6 +20,7 @@ export type AthleteProfile = {
   id: string;
   name: string;
   bodyWeightKg: number | null;
+  sex: 'male' | 'female' | null;
 
   createdAt: number;
   updatedAt: number;

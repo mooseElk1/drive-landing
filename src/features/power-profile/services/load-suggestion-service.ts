@@ -263,8 +263,8 @@ export function getLoadRecommendation(
       loadKg: opener.kind === 'numeric' ? opener.loadKg : null,
       rationale:
         opener.kind === 'numeric'
-          ? 'Start at ~30% bodyweight.'
-          : 'Start at ~30% of your bodyweight (calculate manually).',
+          ? 'Start at ~40% bodyweight.'
+          : 'Start at ~40% of your bodyweight (calculate manually).',
     };
   }
 

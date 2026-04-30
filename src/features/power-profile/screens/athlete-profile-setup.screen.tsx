@@ -6,8 +6,16 @@ import { useForm } from 'react-hook-form';
 import { useWindowDimensions } from 'react-native';
 import { z } from 'zod';
 
-import { Button, ControlledInput, Text, Tile, View } from '@/components/ui';
+import {
+  Button,
+  ControlledInput,
+  ControlledSelect,
+  Text,
+  Tile,
+  View,
+} from '@/components/ui';
 import { LoadVelocityChart } from '@/features/power-profile/components/load-velocity-chart';
+import { STRENGTH_STANDARDS } from '@/features/power-profile/constants';
 import { readWorkoutDatabase } from '@/features/workout/services/workout-persistence';
 import { translate } from '@/lib/i18n/utils';
 
@@ -18,6 +26,7 @@ import { resolveChartAnchor } from '../utils/resolve-chart-anchor';
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   bodyWeightKg: z.string().optional(),
+  sex: z.enum(['male', 'female']).optional(),
 });
 
 type FormType = z.infer<typeof schema>;
@@ -34,6 +43,7 @@ function parseOptionalKg(input: string | undefined): number | null {
 function createAthleteProfile(params: {
   name: string;
   bodyWeightKg: number | null;
+  sex: 'male' | 'female' | null;
 }): AthleteProfile {
   const now = Date.now();
   const id = `athlete_${now}_${Math.random().toString(36).slice(2, 9)}`;
@@ -41,6 +51,7 @@ function createAthleteProfile(params: {
     id,
     name: params.name,
     bodyWeightKg: params.bodyWeightKg,
+    sex: params.sex,
     createdAt: now,
     updatedAt: now,
     currentPPL: null,
@@ -59,7 +70,7 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
   const { width } = useWindowDimensions();
   const { control, handleSubmit, reset } = useForm<FormType>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', bodyWeightKg: '' },
+    defaultValues: { name: '', bodyWeightKg: '', sex: undefined },
   });
 
   const athletes = useAthleteProfileStore((s) => s.athletes);
@@ -78,7 +89,7 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
 
   useEffect(() => {
     if (!athlete) {
-      reset({ name: '', bodyWeightKg: '' });
+      reset({ name: '', bodyWeightKg: '', sex: undefined });
       return;
     }
     reset({
@@ -87,6 +98,7 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
         typeof athlete.bodyWeightKg === 'number'
           ? `${athlete.bodyWeightKg}`
           : '',
+      sex: athlete.sex ?? undefined,
     });
     if (!activeAthleteId) setActiveAthleteId(athlete.id);
   }, [activeAthleteId, athlete, reset, setActiveAthleteId]);
@@ -119,11 +131,23 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
     };
   }, [athlete?.id]);
 
-  const onSubmit = ({ name, bodyWeightKg }: FormType) => {
+  function getStrengthTierLabel(params: {
+    sex: 'male' | 'female';
+    pplToBw: number;
+  }): string | null {
+    const tiers = STRENGTH_STANDARDS[params.sex];
+    if (params.pplToBw >= tiers.elite) return 'Elite';
+    if (params.pplToBw >= tiers.advanced) return 'Advanced';
+    if (params.pplToBw >= tiers.trained) return 'Trained';
+    return 'Developing';
+  }
+
+  const onSubmit = ({ name, bodyWeightKg, sex }: FormType) => {
     if (!athlete) {
       const created = createAthleteProfile({
         name,
         bodyWeightKg: parseOptionalKg(bodyWeightKg),
+        sex: sex ?? null,
       });
       upsertAthlete(created);
       setActiveAthleteId(created.id);
@@ -168,6 +192,18 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
               keyboardType="numeric"
             />
 
+            <ControlledSelect
+              name="sex"
+              label={'Sex'}
+              control={control}
+              testID="athlete-sex"
+              placeholder="Select…"
+              options={[
+                { label: 'Male', value: 'male' },
+                { label: 'Female', value: 'female' },
+              ]}
+            />
+
             <Button
               label={translate('powerProfile.profileSetup.actions.create')}
               testID="create-athlete"
@@ -191,6 +227,19 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
                 {athlete?.bodyWeightKg ? `${athlete.bodyWeightKg}` : '—'}
               </Text>
             </View>
+
+            <View className="mt-2 flex-row items-center justify-between">
+              <Text className="text-neutral-600 dark:text-neutral-300">
+                {'Sex'}
+              </Text>
+              <Text className="font-semibold">
+                {athlete?.sex === 'male'
+                  ? 'Male'
+                  : athlete?.sex === 'female'
+                    ? 'Female'
+                    : '—'}
+              </Text>
+            </View>
           </View>
         )}
       </Tile>
@@ -209,6 +258,7 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
                 points={chartPoints}
                 pplLoadKg={chartAnchor.anchorLoadKg}
                 peakPowerW={chartAnchor.anchorPeakPowerW}
+                bodyWeightKg={athlete.bodyWeightKg}
                 xDomainMode="profile"
               />
             </View>
@@ -279,6 +329,33 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
                   {`${athlete.currentPPL.peakPowerW}`}
                 </Text>
               </View>
+
+              {athlete.currentPPL.pplAsPctBW !== null ? (
+                <View className="mt-2 flex-row items-center justify-between">
+                  <Text className="text-neutral-600 dark:text-neutral-300">
+                    {'PPL as %BW'}
+                  </Text>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="font-semibold">
+                      {`${athlete.currentPPL.pplAsPctBW.toFixed(1)}%`}
+                    </Text>
+                    {athlete.sex &&
+                    athlete.bodyWeightKg &&
+                    athlete.bodyWeightKg > 0 ? (
+                      <Tile className="bg-neutral-100 px-2 py-1 dark:bg-charcoal-900">
+                        <Text className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
+                          {getStrengthTierLabel({
+                            sex: athlete.sex,
+                            pplToBw:
+                              athlete.currentPPL.pplLoadKg /
+                              athlete.bodyWeightKg,
+                          })}
+                        </Text>
+                      </Tile>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
 
               <View className="mt-2 flex-row items-center justify-between">
                 <Text className="text-neutral-600 dark:text-neutral-300">

@@ -11,6 +11,7 @@ function makeAthlete(overrides?: Partial<AthleteProfile>): AthleteProfile {
     id: 'athlete_1',
     name: 'Test',
     bodyWeightKg: 82,
+    sex: null,
     createdAt: now,
     updatedAt: now,
     currentPPL: null,

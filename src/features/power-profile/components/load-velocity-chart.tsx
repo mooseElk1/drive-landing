@@ -34,6 +34,7 @@ export type LoadVelocityChartProps = {
   pplLoadKg: number;
   peakPowerW: number;
   points: ChartPoint[];
+  bodyWeightKg?: number | null;
   selectedPointId?: string | null;
   onPointPress?: (id: string | null) => void;
   width: number;
@@ -142,6 +143,7 @@ export function LoadVelocityChart({
   pplLoadKg,
   peakPowerW,
   points,
+  bodyWeightKg = null,
   selectedPointId = null,
   onPointPress,
   width,
@@ -228,6 +230,7 @@ export function LoadVelocityChart({
   const velColor = colors.secondary[500];
   const powerColor = colors.primary[400];
   const pplLineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.25)';
+  const bwLineColor = isDark ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.16)';
 
   const chartBg = isDark ? colors.charcoal[900] : colors.white;
   const chartBorder = isDark ? 'rgba(255,255,255,0.12)' : colors.neutral[200];
@@ -262,6 +265,14 @@ export function LoadVelocityChart({
   );
 
   const pplX = model != null ? xScale(model.pplLoadKg) : null;
+  const bw50X =
+    typeof bodyWeightKg === 'number' && Number.isFinite(bodyWeightKg)
+      ? xScale(bodyWeightKg * 0.5)
+      : null;
+  const bw100X =
+    typeof bodyWeightKg === 'number' && Number.isFinite(bodyWeightKg)
+      ? xScale(bodyWeightKg)
+      : null;
 
   const blendHalfWidthKg = Number.isFinite(pplLoadKg) ? pplLoadKg * 0.1 : 0;
   const blendSteps = 20;
@@ -400,6 +411,54 @@ export function LoadVelocityChart({
               strokeWidth={1}
               strokeDasharray="6,4"
             />
+          ) : null}
+
+          {/* BW reference lines */}
+          {bw50X != null &&
+          bodyWeightKg != null &&
+          bodyWeightKg * 0.5 <= xMax ? (
+            <G>
+              <Line
+                x1={bw50X}
+                x2={bw50X}
+                y1={padding}
+                y2={height - padding}
+                stroke={bwLineColor}
+                strokeWidth={1}
+                strokeDasharray="3,5"
+              />
+              <SvgText
+                x={bw50X + 4}
+                y={padding + 12}
+                fill={bwLineColor}
+                fontSize={9}
+                textAnchor="start"
+              >
+                {'50% BW'}
+              </SvgText>
+            </G>
+          ) : null}
+          {bw100X != null && bodyWeightKg != null && bodyWeightKg <= xMax ? (
+            <G>
+              <Line
+                x1={bw100X}
+                x2={bw100X}
+                y1={padding}
+                y2={height - padding}
+                stroke={bwLineColor}
+                strokeWidth={1}
+                strokeDasharray="3,5"
+              />
+              <SvgText
+                x={bw100X + 4}
+                y={padding + 24}
+                fill={bwLineColor}
+                fontSize={9}
+                textAnchor="start"
+              >
+                {'100% BW'}
+              </SvgText>
+            </G>
           ) : null}
 
           {/* Axes */}

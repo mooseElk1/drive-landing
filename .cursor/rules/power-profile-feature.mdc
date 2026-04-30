@@ -127,7 +127,7 @@ endSession()
 | Zone | Load range |
 |---|---|
 | SPEED_STRENGTH | < 60% PPL |
-| PEAK_POWER | 80–120% PPL |
+| PEAK_POWER | 70–120% PPL |
 | STRENGTH_SPEED | 140–180% PPL |
 | OVERLOAD | > 200% PPL |
 

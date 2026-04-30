@@ -5,7 +5,14 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { Button, ControlledInput, Text, Tile, View } from '@/components/ui';
+import {
+  Button,
+  ControlledInput,
+  ControlledSelect,
+  Text,
+  Tile,
+  View,
+} from '@/components/ui';
 import { translate } from '@/lib/i18n/utils';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
@@ -13,6 +20,7 @@ import { useAthleteProfileStore } from '../store/athlete-profile-store';
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   bodyWeightKg: z.string().optional(),
+  sex: z.enum(['male', 'female']).optional(),
 });
 
 type FormType = z.infer<typeof schema>;
@@ -33,7 +41,7 @@ export function AthleteProfileEditScreen(): React.ReactElement {
 
   const { control, handleSubmit, reset } = useForm<FormType>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', bodyWeightKg: '' },
+    defaultValues: { name: '', bodyWeightKg: '', sex: undefined },
   });
 
   useEffect(() => {
@@ -44,6 +52,7 @@ export function AthleteProfileEditScreen(): React.ReactElement {
         typeof athlete.bodyWeightKg === 'number'
           ? `${athlete.bodyWeightKg}`
           : '',
+      sex: athlete.sex ?? undefined,
     });
   }, [athlete, reset]);
 
@@ -64,12 +73,13 @@ export function AthleteProfileEditScreen(): React.ReactElement {
     );
   }
 
-  const onSave = ({ name, bodyWeightKg }: FormType) => {
+  const onSave = ({ name, bodyWeightKg, sex }: FormType) => {
     const now = Date.now();
     upsertAthlete({
       ...athlete,
       name,
       bodyWeightKg: parseOptionalKg(bodyWeightKg),
+      sex: sex ?? null,
       updatedAt: now,
     });
     router.back();
@@ -97,6 +107,18 @@ export function AthleteProfileEditScreen(): React.ReactElement {
             control={control}
             testID="athlete-bodyweight"
             keyboardType="numeric"
+          />
+
+          <ControlledSelect
+            name="sex"
+            label={'Sex'}
+            control={control}
+            testID="athlete-sex"
+            placeholder="Select…"
+            options={[
+              { label: 'Male', value: 'male' },
+              { label: 'Female', value: 'female' },
+            ]}
           />
 
           <View className="mt-2 flex-row gap-3">

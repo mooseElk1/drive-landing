@@ -13,5 +13,5 @@ export function computeDiscoveryOpenerLoad(
   if (!Number.isFinite(bodyWeightKg) || bodyWeightKg <= 0)
     return { kind: 'manual_instruction' };
 
-  return { kind: 'numeric', loadKg: roundToOneDecimal(bodyWeightKg * 0.3) };
+  return { kind: 'numeric', loadKg: roundToOneDecimal(bodyWeightKg * 0.4) };
 }

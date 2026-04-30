@@ -12,7 +12,7 @@ test('computeZonePrescription derives bands from PPL', () => {
     maxLoadKg: 60,
   });
   expect(zones[TrainingZone.PEAK_POWER]).toEqual({
-    minLoadKg: 80,
+    minLoadKg: 70,
     maxLoadKg: 120,
   });
   expect(zones[TrainingZone.STRENGTH_SPEED]).toEqual({
@@ -28,7 +28,7 @@ test('computeZonePrescription derives bands from PPL', () => {
 test('classifyLoad matches defined zone ranges', () => {
   const ppl = 100;
   expect(classifyLoad(59.9, ppl)).toBe(TrainingZone.SPEED_STRENGTH);
-  expect(classifyLoad(80, ppl)).toBe(TrainingZone.PEAK_POWER);
+  expect(classifyLoad(70, ppl)).toBe(TrainingZone.PEAK_POWER);
   expect(classifyLoad(120, ppl)).toBe(TrainingZone.PEAK_POWER);
   expect(classifyLoad(140, ppl)).toBe(TrainingZone.STRENGTH_SPEED);
   expect(classifyLoad(180, ppl)).toBe(TrainingZone.STRENGTH_SPEED);
@@ -37,7 +37,7 @@ test('classifyLoad matches defined zone ranges', () => {
 
 test('classifyLoad bridges gaps consistently', () => {
   const ppl = 100;
-  expect(classifyLoad(70, ppl)).toBe(TrainingZone.SPEED_STRENGTH); // 0.6–0.8 gap
+  expect(classifyLoad(65, ppl)).toBe(TrainingZone.SPEED_STRENGTH); // 0.6–0.7 gap
   expect(classifyLoad(130, ppl)).toBe(TrainingZone.PEAK_POWER); // 1.2–1.4 gap
   expect(classifyLoad(190, ppl)).toBe(TrainingZone.STRENGTH_SPEED); // 1.8–2.0 gap
 });

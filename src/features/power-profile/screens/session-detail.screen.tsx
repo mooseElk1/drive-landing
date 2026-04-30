@@ -262,6 +262,7 @@ export function SessionDetailScreen(): React.ReactElement {
           pplLoadKg={anchorLoadKg}
           peakPowerW={anchorPeakPowerW}
           points={points}
+          bodyWeightKg={athlete?.bodyWeightKg ?? null}
           selectedPointId={selectedSprintId}
           onPointPress={setSelectedSprintId}
         />
