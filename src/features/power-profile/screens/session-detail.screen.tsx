@@ -12,10 +12,7 @@ import Reanimated, {
 
 import { Button, ScrollView, Text, Tile, View } from '@/components/ui';
 import colors from '@/components/ui/colors';
-import {
-  type ChartPoint,
-  LoadVelocityChart,
-} from '@/features/power-profile/components/load-velocity-chart';
+import { PowerProfileChartCard } from '@/features/power-profile/components/power-profile-chart-card';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { TrainingZone } from '@/features/power-profile/types/training-zones';
 import { readWorkoutDatabase } from '@/features/workout/services/workout-persistence';
@@ -180,19 +177,6 @@ export function SessionDetailScreen(): React.ReactElement {
   const athlete = state.athleteId ? getAthleteById(state.athleteId) : null;
   const { anchorLoadKg, anchorPeakPowerW } = resolveChartAnchor(athlete);
 
-  const points: ChartPoint[] = state.sprintEntries.map((e) => {
-    const loadKg = e.metrics?.loadKg ?? 0;
-    const zoneName =
-      anchorLoadKg > 0 ? zoneNameForLoad(loadKg, anchorLoadKg) : undefined;
-    return {
-      id: e.id,
-      loadKg,
-      peakPowerW: e.metrics?.peakPower ?? null,
-      peakVelocity: e.metrics?.peakVelocity ?? null,
-      zoneName,
-    };
-  });
-
   return (
     <ScrollView
       className="flex-1"
@@ -252,26 +236,21 @@ export function SessionDetailScreen(): React.ReactElement {
         </Tile>
       </View>
 
-      <Tile className="mt-3 bg-white dark:bg-neutral-900">
-        <Text className="mb-2 text-base font-semibold">
-          {translate('powerProfile.sessionDetail.curveTitle')}
-        </Text>
-        <LoadVelocityChart
-          width={340}
-          height={240}
+      <View className="mt-3">
+        <PowerProfileChartCard
+          title={translate('powerProfile.sessionDetail.curveTitle')}
+          mode="session"
           pplLoadKg={anchorLoadKg}
           peakPowerW={anchorPeakPowerW}
-          points={points}
           bodyWeightKg={athlete?.bodyWeightKg ?? null}
-          selectedPointId={selectedSprintId}
-          onPointPress={setSelectedSprintId}
+          sessionEntries={state.sprintEntries}
         />
         {anchorLoadKg <= 0 ? (
           <Text className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
             {'Establish PPL to see training zones'}
           </Text>
         ) : null}
-      </Tile>
+      </View>
 
       <View className="mt-3">
         {state.sprintEntries.map((e) => (
@@ -368,20 +347,6 @@ function SprintSwipeRow({
       </TouchableOpacity>
     </Swipeable>
   );
-}
-
-function zoneNameForLoad(loadKg: number, pplLoadKg: number): string {
-  const zone = classifyLoad(loadKg, pplLoadKg);
-  switch (zone) {
-    case TrainingZone.SPEED_STRENGTH:
-      return 'Speed-Strength';
-    case TrainingZone.PEAK_POWER:
-      return 'Peak Power';
-    case TrainingZone.STRENGTH_SPEED:
-      return 'Strength-Speed';
-    case TrainingZone.OVERLOAD:
-      return 'Overload';
-  }
 }
 
 function zoneAccentColorForLoad(loadKg: number, pplLoadKg: number): string {

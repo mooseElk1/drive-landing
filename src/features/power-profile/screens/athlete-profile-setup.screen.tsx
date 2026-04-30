@@ -14,9 +14,8 @@ import {
   Tile,
   View,
 } from '@/components/ui';
-import { LoadVelocityChart } from '@/features/power-profile/components/load-velocity-chart';
+import { PowerProfileChartCard } from '@/features/power-profile/components/power-profile-chart-card';
 import { STRENGTH_STANDARDS } from '@/features/power-profile/constants';
-import { readWorkoutDatabase } from '@/features/workout/services/workout-persistence';
 import { translate } from '@/lib/i18n/utils';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
@@ -67,7 +66,7 @@ function createAthleteProfile(params: {
 
 export function AthleteProfileSetupScreen(): React.ReactElement {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  useWindowDimensions();
   const { control, handleSubmit, reset } = useForm<FormType>({
     resolver: zodResolver(schema),
     defaultValues: { name: '', bodyWeightKg: '', sex: undefined },
@@ -83,9 +82,6 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
   const athlete = athletes[0] ?? null;
   const isCreateMode = !athlete;
   const chartAnchor = resolveChartAnchor(athlete);
-  const [chartPoints, setChartPoints] = React.useState<
-    React.ComponentProps<typeof LoadVelocityChart>['points']
-  >([]);
 
   useEffect(() => {
     if (!athlete) {
@@ -102,34 +98,6 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
     });
     if (!activeAthleteId) setActiveAthleteId(athlete.id);
   }, [activeAthleteId, athlete, reset, setActiveAthleteId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      if (!athlete?.id) {
-        if (!cancelled) setChartPoints([]);
-        return;
-      }
-      const db = await readWorkoutDatabase();
-      const entries = Object.values(db.workouts);
-      const points = entries
-        .filter((e) => Boolean(e) && !e.deletedAt)
-        .filter((e) => e.metrics?.athleteId === athlete.id)
-        .map((e) => ({
-          id: e.id,
-          loadKg: e.metrics?.loadKg ?? 0,
-          peakVelocity: e.metrics?.peakVelocity ?? null,
-          peakPowerW: e.metrics?.peakPower ?? null,
-        }))
-        .filter((p) => Number.isFinite(p.loadKg) && p.loadKg > 0);
-
-      if (!cancelled) setChartPoints(points);
-    }
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [athlete?.id]);
 
   function getStrengthTierLabel(params: {
     sex: 'male' | 'female';
@@ -250,25 +218,16 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
             {translate('powerProfile.profileSetup.powerProfile.title')}
           </Text>
 
-          {chartPoints.length > 0 ? (
-            <View className="mt-3 items-center">
-              <LoadVelocityChart
-                width={Math.min(340, width - 32)}
-                height={260}
-                points={chartPoints}
-                pplLoadKg={chartAnchor.anchorLoadKg}
-                peakPowerW={chartAnchor.anchorPeakPowerW}
-                bodyWeightKg={athlete.bodyWeightKg}
-                xDomainMode="profile"
-              />
-            </View>
-          ) : (
-            <View className="mt-3">
-              <Text className="text-neutral-600 dark:text-neutral-300">
-                {'No sprint data yet'}
-              </Text>
-            </View>
-          )}
+          <View className="mt-3">
+            <PowerProfileChartCard
+              title={'Power Profile'}
+              mode="athlete"
+              athleteId={athlete.id}
+              bodyWeightKg={athlete.bodyWeightKg}
+              pplLoadKg={chartAnchor.anchorLoadKg}
+              peakPowerW={chartAnchor.anchorPeakPowerW}
+            />
+          </View>
 
           {athlete.historicalPeakPower !== null ? (
             <View className="mt-3 flex-row gap-3">
