@@ -156,6 +156,8 @@ export function LoadVelocityChart({
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [internalShowBwLines, setInternalShowBwLines] = React.useState(false);
+  const [internalShowPplMarker, setInternalShowPplMarker] =
+    React.useState(false);
   const padding = 28;
   const innerW = Math.max(1, width - padding * 2);
   const innerH = Math.max(1, height - padding * 2);
@@ -269,6 +271,7 @@ export function LoadVelocityChart({
   );
 
   const pplX = model != null ? xScale(model.pplLoadKg) : null;
+  const pplAvailable = pplX != null;
   const bwAvailable =
     typeof bodyWeightKg === 'number' &&
     Number.isFinite(bodyWeightKg) &&
@@ -290,41 +293,86 @@ export function LoadVelocityChart({
         { width, backgroundColor: chartBg, borderColor: chartBorder },
       ]}
     >
-      {bwAvailable && !bwControlled ? (
-        <Pressable
-          style={[
-            styles.bwToggle,
-            {
-              backgroundColor: showBwLines
-                ? isDark
-                  ? 'rgba(255,255,255,0.18)'
-                  : 'rgba(0,0,0,0.08)'
-                : isDark
-                  ? 'rgba(255,255,255,0.10)'
-                  : 'rgba(0,0,0,0.04)',
-              borderColor: showBwLines
-                ? isDark
-                  ? 'rgba(255,255,255,0.30)'
-                  : 'rgba(0,0,0,0.18)'
-                : isDark
-                  ? 'rgba(255,255,255,0.18)'
-                  : 'rgba(0,0,0,0.10)',
-            },
-          ]}
-          onPress={() => setInternalShowBwLines((v) => !v)}
-          accessibilityRole="button"
-          accessibilityLabel="Toggle bodyweight reference lines"
-          testID="bw-reference-toggle"
-        >
-          <Text
-            style={[
-              styles.bwToggleText,
-              { color: isDark ? colors.neutral[100] : colors.neutral[900] },
-            ]}
-          >
-            {'BW'}
-          </Text>
-        </Pressable>
+      {!bwControlled && (bwAvailable || pplAvailable) ? (
+        <View style={styles.toggleRow}>
+          {bwAvailable ? (
+            <Pressable
+              style={[
+                styles.toggleChip,
+                {
+                  backgroundColor: showBwLines
+                    ? isDark
+                      ? 'rgba(255,255,255,0.18)'
+                      : 'rgba(0,0,0,0.08)'
+                    : isDark
+                      ? 'rgba(255,255,255,0.10)'
+                      : 'rgba(0,0,0,0.04)',
+                  borderColor: showBwLines
+                    ? isDark
+                      ? 'rgba(255,255,255,0.30)'
+                      : 'rgba(0,0,0,0.18)'
+                    : isDark
+                      ? 'rgba(255,255,255,0.18)'
+                      : 'rgba(0,0,0,0.10)',
+                },
+              ]}
+              onPress={() => setInternalShowBwLines((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle bodyweight reference lines"
+              testID="bw-reference-toggle"
+            >
+              <Text
+                style={[
+                  styles.toggleChipText,
+                  {
+                    color: isDark ? colors.neutral[100] : colors.neutral[900],
+                  },
+                ]}
+              >
+                {'BW'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {pplAvailable ? (
+            <Pressable
+              style={[
+                styles.toggleChip,
+                {
+                  backgroundColor: internalShowPplMarker
+                    ? isDark
+                      ? 'rgba(255,255,255,0.18)'
+                      : 'rgba(0,0,0,0.08)'
+                    : isDark
+                      ? 'rgba(255,255,255,0.10)'
+                      : 'rgba(0,0,0,0.04)',
+                  borderColor: internalShowPplMarker
+                    ? isDark
+                      ? 'rgba(255,255,255,0.30)'
+                      : 'rgba(0,0,0,0.18)'
+                    : isDark
+                      ? 'rgba(255,255,255,0.18)'
+                      : 'rgba(0,0,0,0.10)',
+                },
+              ]}
+              onPress={() => setInternalShowPplMarker((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle PPL marker line"
+              testID="ppl-marker-toggle"
+            >
+              <Text
+                style={[
+                  styles.toggleChipText,
+                  {
+                    color: isDark ? colors.neutral[100] : colors.neutral[900],
+                  },
+                ]}
+              >
+                {'PPL'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
       <Pressable style={styles.pressLayer} onPress={clearSelection}>
         <Svg width={width} height={height}>
@@ -445,7 +493,7 @@ export function LoadVelocityChart({
           ) : null}
 
           {/* PPL marker */}
-          {pplX != null ? (
+          {pplX != null && internalShowPplMarker ? (
             <Line
               x1={pplX}
               x2={pplX}
@@ -702,17 +750,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pressLayer: { position: 'relative' },
-  bwToggle: {
+  toggleRow: {
     position: 'absolute',
     top: 8,
     right: 8,
     zIndex: 5,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  toggleChip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
   },
-  bwToggleText: {
+  toggleChipText: {
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.4,
