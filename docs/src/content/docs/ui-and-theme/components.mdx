@@ -29,6 +29,7 @@ Based on your needs, you can either use them as they are or customize them to fi
   - list.tsx
   - modal.tsx
   - progress-bar.tsx
+  - segmented-control.tsx
   - select.tsx
   - text.tsx
   - utils.tsx
@@ -157,6 +158,24 @@ Each variant should include styles for the `container`, `indicator`, and `label`
 **Use Case**
 
 <CodeBlock file="src/components/buttons.tsx" />
+
+## SegmentedControl
+
+Use `SegmentedControl` for a compact, single-select filter bar (e.g., `PPL Test / Last 7d / Last 30d / All time`).
+
+<CodeBlock file="src/components/ui/segmented-control.tsx" />
+
+**Props**
+
+- `value` - selected value
+- `options` - array of `{ value, label }`
+- `onChange` - callback when a segment is pressed
+- `size` - `sm | md` (defaults to `md`)
+- `className` / `optionClassName` - styling overrides
+
+**Design guideline**
+
+When the control is inset (container uses padding like `p-1`), the selected segment should use a *slightly smaller* corner radius than the container so the curves visually match (e.g., container `rounded-xl` + selected `rounded-lg`).
 
 ## Input
 

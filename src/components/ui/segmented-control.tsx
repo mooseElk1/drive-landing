@@ -26,11 +26,11 @@ export function SegmentedControl<T extends string>({
   testID?: string;
 }): React.ReactElement {
   const container =
-    `flex-row rounded-full bg-neutral-200 p-1 dark:bg-charcoal-800 ${
+    `flex-row overflow-hidden rounded-xl bg-neutral-200 p-1 dark:bg-charcoal-800 ${
       className ?? ''
     }`.trim();
   const option = (selected: boolean) =>
-    `flex-1 rounded-full ${
+    `flex-1 ${selected ? 'rounded-lg' : 'rounded-xl'} ${
       size === 'sm' ? 'px-2 py-1.5' : 'px-3 py-2'
     } ${selected ? 'bg-white dark:bg-charcoal-950' : 'bg-transparent'} ${
       optionClassName ?? ''
