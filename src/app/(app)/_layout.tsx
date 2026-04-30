@@ -9,6 +9,7 @@ import {
   Feed as FeedIcon,
   Home as HomeIcon,
   Profile as ProfileIcon,
+  Rate as RateIcon,
   Settings as SettingsIcon,
 } from '@/components/ui/icons';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
@@ -56,6 +57,23 @@ export default function TabLayout() {
         options={{
           title: 'Workout',
           tabBarIcon: ({ color }) => <FeedIcon color={color} />,
+          headerRight: ({ tintColor }) => (
+            <Pressable
+              onPress={() => router.push('/profile-setup')}
+              hitSlop={10}
+              style={headerIconButtonStyle}
+            >
+              <ProfileIcon color={tintColor} />
+            </Pressable>
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="power-profile"
+        options={{
+          title: 'Power Profile',
+          tabBarIcon: ({ color }) => <RateIcon color={color} />,
           headerRight: ({ tintColor }) => (
             <Pressable
               onPress={() => router.push('/profile-setup')}

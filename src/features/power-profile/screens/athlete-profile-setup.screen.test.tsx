@@ -75,6 +75,7 @@ describe('AthleteProfileSetupScreen', () => {
 
     expect(screen.getByText('A')).toBeOnTheScreen();
     expect(screen.getByText('80')).toBeOnTheScreen();
+    expect(screen.getByTestId('view-analytics-cta')).toBeOnTheScreen();
   });
 
   it('shows a CTA when no power profile exists and routes to workout', async () => {
