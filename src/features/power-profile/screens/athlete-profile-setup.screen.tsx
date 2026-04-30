@@ -16,6 +16,13 @@ import {
 } from '@/components/ui';
 import { PowerProfileChartCard } from '@/features/power-profile/components/power-profile-chart-card';
 import { STRENGTH_STANDARDS } from '@/features/power-profile/constants';
+import {
+  type ChartPointSelection,
+  computePeakPowerAndLoad,
+  selectAthleteEntries,
+} from '@/features/power-profile/services/chart-point-selection-service';
+import { readSessionsDb } from '@/features/power-profile/services/power-profile-persistence';
+import { readWorkoutDatabase } from '@/features/workout/services/workout-persistence';
 import { translate } from '@/lib/i18n/utils';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
@@ -82,6 +89,15 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
   const athlete = athletes[0] ?? null;
   const isCreateMode = !athlete;
   const chartAnchor = resolveChartAnchor(athlete);
+  const [selection, setSelection] =
+    React.useState<ChartPointSelection>('ppl_test');
+  const [selectedPoints, setSelectedPoints] = React.useState<
+    React.ComponentProps<typeof PowerProfileChartCard>['points']
+  >([]);
+  const [selectedPeak, setSelectedPeak] = React.useState<{
+    peakPowerW: number;
+    loadKg: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!athlete) {
@@ -98,6 +114,66 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
     });
     if (!activeAthleteId) setActiveAthleteId(athlete.id);
   }, [activeAthleteId, athlete, reset, setActiveAthleteId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!athlete?.id) {
+        if (!cancelled) {
+          setSelectedPoints([]);
+          setSelectedPeak(null);
+        }
+        return;
+      }
+
+      const nowMs = Date.now();
+      const [workoutDb, sessionsDb] = await Promise.all([
+        readWorkoutDatabase(),
+        readSessionsDb(),
+      ]);
+
+      const allEntries = Object.values(workoutDb.workouts).filter(Boolean);
+      const chosen = selectAthleteEntries({
+        athleteId: athlete.id,
+        selection,
+        sessions: Object.values(sessionsDb.sessions),
+        entries: allEntries,
+        nowMs,
+      });
+
+      const nextPoints = chosen
+        .map((e) => ({
+          id: e.id,
+          loadKg: e.metrics?.loadKg ?? 0,
+          peakVelocity: e.metrics?.peakVelocity ?? null,
+          peakPowerW: e.metrics?.peakPower ?? null,
+        }))
+        .filter((p) => Number.isFinite(p.loadKg) && p.loadKg > 0);
+
+      const peak = computePeakPowerAndLoad(chosen);
+      if (!cancelled) {
+        setSelectedPoints(nextPoints);
+        setSelectedPeak(peak);
+      }
+    }
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [athlete?.id, selection]);
+
+  function peakLabel(sel: ChartPointSelection): string {
+    switch (sel) {
+      case 'all_time':
+        return 'All-Time Peak';
+      case 'ppl_test':
+        return 'Peak (PPL Test)';
+      case 'last_7d':
+        return 'Peak (Last 7d)';
+      case 'last_30d':
+        return 'Peak (Last 30d)';
+    }
+  }
 
   function getStrengthTierLabel(params: {
     sex: 'male' | 'female';
@@ -213,12 +289,8 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
       </Tile>
 
       {athlete ? (
-        <Tile className="mt-4 bg-white dark:bg-neutral-900">
-          <Text className="text-xl font-semibold">
-            {translate('powerProfile.profileSetup.powerProfile.title')}
-          </Text>
-
-          <View className="mt-3">
+        <>
+          <View className="mt-4">
             <PowerProfileChartCard
               title={'Power Profile'}
               mode="athlete"
@@ -226,128 +298,131 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
               bodyWeightKg={athlete.bodyWeightKg}
               pplLoadKg={chartAnchor.anchorLoadKg}
               peakPowerW={chartAnchor.anchorPeakPowerW}
+              selection={selection}
+              onSelectionChange={setSelection}
+              points={selectedPoints}
             />
           </View>
 
-          {athlete.historicalPeakPower !== null ? (
+          {selectedPeak ? (
             <View className="mt-3 flex-row gap-3">
-              <Tile
-                variant="stat"
-                className="bg-neutral-100 dark:bg-charcoal-900"
-              >
+              <Tile variant="stat" className="bg-white dark:bg-neutral-900">
                 <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
-                  {'All-Time Peak'}
+                  {peakLabel(selection)}
                 </Text>
                 <Text className="text-2xl font-bold text-primary-400">
-                  {Math.round(athlete.historicalPeakPower).toString()}
+                  {Math.round(selectedPeak.peakPowerW).toString()}
                 </Text>
                 <Text className="text-xs text-neutral-400 dark:text-neutral-500">
                   {'W'}
                 </Text>
               </Tile>
 
-              {athlete.historicalPeakPowerLoad !== null ? (
-                <Tile
-                  variant="stat"
-                  className="bg-neutral-100 dark:bg-charcoal-900"
-                >
-                  <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
-                    {'At Load'}
-                  </Text>
-                  <Text className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                    {athlete.historicalPeakPowerLoad.toFixed(1)}
-                  </Text>
-                  <Text className="text-xs text-neutral-400 dark:text-neutral-500">
-                    {'kg'}
-                  </Text>
-                </Tile>
-              ) : null}
+              <Tile variant="stat" className="bg-white dark:bg-neutral-900">
+                <Text className="text-xs font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                  {'At Load'}
+                </Text>
+                <Text className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                  {selectedPeak.loadKg.toFixed(1)}
+                </Text>
+                <Text className="text-xs text-neutral-400 dark:text-neutral-500">
+                  {'kg'}
+                </Text>
+              </Tile>
             </View>
           ) : null}
 
-          {athlete.currentPPL ? (
-            <View className="mt-3">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-neutral-600 dark:text-neutral-300">
-                  {translate(
-                    'powerProfile.profileSetup.powerProfile.pplLoadKg'
-                  )}
-                </Text>
-                <Text className="font-semibold">
-                  {`${athlete.currentPPL.pplLoadKg}`}
-                </Text>
-              </View>
+          <Tile className="mt-3 bg-white dark:bg-neutral-900">
+            {athlete.currentPPL ? (
+              <View className="mt-3">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-neutral-600 dark:text-neutral-300">
+                    {translate(
+                      'powerProfile.profileSetup.powerProfile.pplLoadKg'
+                    )}
+                  </Text>
+                  <Text className="font-semibold">
+                    {`${athlete.currentPPL.pplLoadKg}`}
+                  </Text>
+                </View>
 
-              <View className="mt-2 flex-row items-center justify-between">
-                <Text className="text-neutral-600 dark:text-neutral-300">
-                  {translate(
-                    'powerProfile.profileSetup.powerProfile.peakPowerW'
-                  )}
-                </Text>
-                <Text className="font-semibold">
-                  {`${athlete.currentPPL.peakPowerW}`}
-                </Text>
-              </View>
-
-              {athlete.currentPPL.pplAsPctBW !== null ? (
                 <View className="mt-2 flex-row items-center justify-between">
                   <Text className="text-neutral-600 dark:text-neutral-300">
-                    {'PPL as %BW'}
+                    {translate(
+                      'powerProfile.profileSetup.powerProfile.peakPowerW'
+                    )}
                   </Text>
-                  <View className="flex-row items-center gap-2">
-                    <Text className="font-semibold">
-                      {`${athlete.currentPPL.pplAsPctBW.toFixed(1)}%`}
-                    </Text>
-                    {athlete.sex &&
-                    athlete.bodyWeightKg &&
-                    athlete.bodyWeightKg > 0 ? (
-                      <Tile className="bg-neutral-100 px-2 py-1 dark:bg-charcoal-900">
-                        <Text className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
-                          {getStrengthTierLabel({
-                            sex: athlete.sex,
-                            pplToBw:
-                              athlete.currentPPL.pplLoadKg /
-                              athlete.bodyWeightKg,
-                          })}
-                        </Text>
-                      </Tile>
-                    ) : null}
-                  </View>
+                  <Text className="font-semibold">
+                    {`${athlete.currentPPL.peakPowerW}`}
+                  </Text>
                 </View>
-              ) : null}
 
-              <View className="mt-2 flex-row items-center justify-between">
-                <Text className="text-neutral-600 dark:text-neutral-300">
-                  {translate('powerProfile.profileSetup.powerProfile.mode')}
-                </Text>
-                <Text className="font-semibold">
-                  {athlete.currentPPL.powerMeasurementMode}
-                </Text>
-              </View>
+                {athlete.currentPPL.pplAsPctBW !== null ? (
+                  <View className="mt-2 flex-row items-center justify-between">
+                    <Text className="text-neutral-600 dark:text-neutral-300">
+                      {'PPL as %BW'}
+                    </Text>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="font-semibold">
+                        {`${athlete.currentPPL.pplAsPctBW.toFixed(1)}%`}
+                      </Text>
+                      {athlete.sex &&
+                      athlete.bodyWeightKg &&
+                      athlete.bodyWeightKg > 0 ? (
+                        <Tile className="bg-neutral-100 px-2 py-1 dark:bg-charcoal-900">
+                          <Text className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
+                            {getStrengthTierLabel({
+                              sex: athlete.sex,
+                              pplToBw:
+                                athlete.currentPPL.pplLoadKg /
+                                athlete.bodyWeightKg,
+                            })}
+                          </Text>
+                        </Tile>
+                      ) : null}
+                    </View>
+                  </View>
+                ) : null}
 
-              <View className="mt-2 flex-row items-center justify-between">
-                <Text className="text-neutral-600 dark:text-neutral-300">
-                  {translate('powerProfile.profileSetup.powerProfile.updated')}
-                </Text>
-                <Text className="font-semibold">
-                  {new Date(athlete.currentPPL.timestamp).toLocaleDateString()}
-                </Text>
+                <View className="mt-2 flex-row items-center justify-between">
+                  <Text className="text-neutral-600 dark:text-neutral-300">
+                    {translate('powerProfile.profileSetup.powerProfile.mode')}
+                  </Text>
+                  <Text className="font-semibold">
+                    {athlete.currentPPL.powerMeasurementMode}
+                  </Text>
+                </View>
+
+                <View className="mt-2 flex-row items-center justify-between">
+                  <Text className="text-neutral-600 dark:text-neutral-300">
+                    {translate(
+                      'powerProfile.profileSetup.powerProfile.updated'
+                    )}
+                  </Text>
+                  <Text className="font-semibold">
+                    {new Date(
+                      athlete.currentPPL.timestamp
+                    ).toLocaleDateString()}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ) : (
-            <View className="mt-3">
-              <Text className="text-neutral-600 dark:text-neutral-300">
-                {translate('powerProfile.profileSetup.powerProfile.empty')}
-              </Text>
-              <Button
-                className="mt-3"
-                testID="power-profile-cta"
-                label={translate('powerProfile.profileSetup.powerProfile.cta')}
-                onPress={() => router.push('/workout')}
-              />
-            </View>
-          )}
-        </Tile>
+            ) : (
+              <View className="mt-3">
+                <Text className="text-neutral-600 dark:text-neutral-300">
+                  {translate('powerProfile.profileSetup.powerProfile.empty')}
+                </Text>
+                <Button
+                  className="mt-3"
+                  testID="power-profile-cta"
+                  label={translate(
+                    'powerProfile.profileSetup.powerProfile.cta'
+                  )}
+                  onPress={() => router.push('/workout')}
+                />
+              </View>
+            )}
+          </Tile>
+        </>
       ) : null}
     </View>
   );

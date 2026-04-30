@@ -67,10 +67,13 @@ export function PowerProfileChartCard(props: {
   pplLoadKg: number;
   peakPowerW: number;
   sessionEntries?: WorkoutEntry[];
+  selection?: ChartPointSelection;
+  onSelectionChange?: (sel: ChartPointSelection) => void;
+  points?: ChartPoint[];
 }): React.ReactElement {
   const { width: windowWidth } = useWindowDimensions();
 
-  const [selection, setSelection] =
+  const [internalSelection, setInternalSelection] =
     React.useState<ChartPointSelection>('ppl_test');
   const [showBw, setShowBw] = React.useState(false);
   const [showPpl, setShowPpl] = React.useState(false);
@@ -86,10 +89,14 @@ export function PowerProfileChartCard(props: {
     props.bodyWeightKg > 0;
   const pplAvailable = Number.isFinite(props.pplLoadKg) && props.pplLoadKg > 0;
 
+  const selection = props.selection ?? internalSelection;
+  const resolvedPoints = props.points ?? points;
+
   React.useEffect(() => {
     let cancelled = false;
 
     async function run() {
+      if (props.points) return;
       if (props.mode === 'session') {
         const sessionEntries = props.sessionEntries ?? [];
         const next = sessionEntries
@@ -161,7 +168,11 @@ export function PowerProfileChartCard(props: {
                   presentation="dropdown"
                   value={selection}
                   options={selectionOptions()}
-                  onSelect={(v) => setSelection(v as ChartPointSelection)}
+                  onSelect={(v) => {
+                    const next = v as ChartPointSelection;
+                    props.onSelectionChange?.(next);
+                    if (!props.selection) setInternalSelection(next);
+                  }}
                   testID="chart-selection"
                 />
               </View>
@@ -194,7 +205,7 @@ export function PowerProfileChartCard(props: {
           height={240}
           pplLoadKg={props.pplLoadKg}
           peakPowerW={props.peakPowerW}
-          points={points}
+          points={resolvedPoints}
           bodyWeightKg={props.bodyWeightKg ?? null}
           showBodyWeightReferenceLines={showBw}
           showPplMarker={showPpl}
