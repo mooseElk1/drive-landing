@@ -281,7 +281,6 @@ export function LoadVelocityChart({
   const bw50X = bwAvailable && showBwLines ? xScale(bodyWeightKg * 0.5) : null;
   const bw100X = bwAvailable && showBwLines ? xScale(bodyWeightKg) : null;
 
-  const blendHalfWidthKg = Number.isFinite(pplLoadKg) ? pplLoadKg * 0.1 : 0;
   const blendSteps = 20;
 
   return (
@@ -376,9 +375,11 @@ export function LoadVelocityChart({
             const parsedB = parseRgba(b.fill);
             if (!parsedA || !parsedB) return [];
 
-            const boundaryKg = (a.maxLoadKg + b.minLoadKg) / 2;
-            const startKg = clamp(boundaryKg - blendHalfWidthKg, 0, xMax);
-            const endKg = clamp(boundaryKg + blendHalfWidthKg, 0, xMax);
+            // Blend only across the true gap between zones, otherwise the blend
+            // creates extra hard edges inside a zone (most visible at high-contrast
+            // boundaries like Speed-Strength → Peak Power).
+            const startKg = clamp(a.maxLoadKg, 0, xMax);
+            const endKg = clamp(b.minLoadKg, 0, xMax);
             if (!(endKg > startKg)) return [];
 
             const startX = xScale(startKg);
