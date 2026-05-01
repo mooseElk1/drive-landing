@@ -428,7 +428,7 @@ zoneDistribution: Record<TrainingZone, number>  // count of sprints per zone
 
 #### Route: `src/app/(app)/session-summary.tsx`
 
-Navigation from `endSession()` → `router.replace('/session-summary')` (replaces session screen so back-button goes to home, not back into an ended session).
+Navigation from `endSession()` → `router.replace('/session-summary')` (replaces session screen so back-button goes to the main app, not back into an ended session).
 
 ---
 
@@ -499,7 +499,7 @@ Thin route that reads the sprint `id` param and renders `SprintDetailScreen`. Wo
 The Discovery Test (and targeted Peak Power Test) is reachable from:
 
 - **Profile summary screen** — primary CTA ("Run Discovery Test" for new athletes; "Run Targeted Retest" for existing profiles with a CI retest suggestion)
-- **Home / session start screen** — "Test Your Peak Power" shortcut card visible when no PPL is established or a retest is recommended
+- **Training Setup screen** — "Test Your Peak Power" shortcut card visible when no PPL is established or a retest is recommended
 - **Any session** — a "Run PPL Test Now" option in the session action menu
 
 All entry points navigate to the same `discovery-test.tsx` route with a `mode` param (`'discovery' | 'targeted_retest'`).
@@ -607,7 +607,7 @@ Before starting any training session the athlete can configure:
 - Post-sprint: show `load-suggestion-tile` only when `loadSuggestionsEnabled = true`; tile reflects the target zone
 - Post-sprint: if overload signal condition met, show `overload-signal-banner` with suggested action
 
-### Home Screen Additions
+### Training Setup Screen Additions
 
 - "Test Your Peak Power" card: visible when active athlete has no PPL established, or when CI badge is LOW_CONFIDENCE / EXPIRED — navigates to `discovery-test.tsx`
 - Active athlete's CI badge and current PPL summary — quick glance without entering the profile screen
@@ -657,7 +657,7 @@ Because `power-session-store` is MMKV-persisted, the session state survives an u
 
 **Detection:** on app launch, the root layout checks for a persisted `power-session-store` state where `sessionId` is non-null and `endedAt` is null — indicating a session that was never cleanly closed.
 
-**Resume prompt:** a modal (blocking) is shown before the home screen renders:
+**Resume prompt:** a modal (blocking) is shown before the Training Setup screen renders:
 
 > _"You have an unfinished session from [time/date]. Do you want to resume it?"_
 >
@@ -696,7 +696,7 @@ If a Discovery Test is stopped early (app closed, athlete fatigued, session ende
 
 - `PowerProfileSession` has `testStatus: 'complete' | 'incomplete' | 'not_a_test'` and `testMode: 'discovery' | 'targeted_retest' | null`
 - `AthleteProfile` stores `incompleteDiscoverySessionId: string | null`
-- On next launch, if `incompleteDiscoverySessionId` is set, the profile screen and home screen show a "Resume Discovery Test" CTA
+- On next launch, if `incompleteDiscoverySessionId` is set, the profile screen and Training Setup screen show a "Resume Discovery Test" CTA
 - Resuming navigates to `discovery-test.tsx` in `'discovery'` mode; the session store is pre-populated with the prior sprints already recorded, and the curve is shown from that point
 - The athlete can also choose to abandon the incomplete test and start fresh; abandoning marks the partial sprints as `testStatus: 'not_a_test'` (they still contribute to organic curve building)
 
@@ -765,7 +765,7 @@ When the athlete records sprints at **progressively heavier loads** and power ke
 
 Before a PPL is known, load suggestions are **not shown**. The `load-suggestion-tile` is hidden entirely. Instead:
 
-- The home screen and session start screen show a persistent but non-intrusive prompt: _"Run a Discovery Test to unlock personalised load prescriptions."_
+- The Training Setup screen shows a persistent but non-intrusive prompt: _"Run a Discovery Test to unlock personalised load prescriptions."_
 - Sprint data is still recorded and contributes to organic curve building once enough load variation has accumulated
 
 ---
@@ -785,9 +785,9 @@ When an athlete profile is deleted:
 
 On first launch (no profile, no sprint history):
 
-1. App lands on the home screen with a "Create Your Profile" CTA card prominent
+1. App lands on the Power Profile screen with a "Create Your Profile" CTA card prominent
 2. Tapping it opens `athlete-profile-setup.screen.tsx` (name required, body weight optional)
-3. After profile creation, user lands back on home screen with a "Test Your Peak Power" suggestion card and a "Start Training" option — **Discovery Test is suggested, not forced**
+3. After profile creation, user lands back on the Power Profile screen with a "Test Your Peak Power" suggestion card and a "Start Training" option — **Discovery Test is suggested, not forced**
 4. Athlete can start training immediately; the power profile builds organically
 
 ---
@@ -800,7 +800,7 @@ On first launch (no profile, no sprint history):
 - **Power source abstraction** — `power-source-service.ts` and `POWER_SOURCE` constant decouple all PPL math from the friction detection question. Raw power is used today; switching is a one-line change. CI Peak Zone Density is fully functional on raw power — the friction quality gate is additive, not foundational.
 - **Body weight is optional** — `bodyWeightKg: number | null` on `AthleteProfile`. All services handle the null case. BW-relative load tables and PPL-as-%-BW are shown only when BW is set; absolute-load logic operates otherwise. App prompts for BW but never blocks.
 - **Load suggestions are opt-in per session** — `loadSuggestionsEnabled` and `targetZone` on `power-session-store` control whether suggestions appear and which zone constrains them. Discovery mode always enables suggestions internally. Training mode respects the athlete's toggle.
-- **Peak Power Test accessible from multiple entry points** — `discovery-test.tsx` accepts a `mode` param (`'discovery' | 'targeted_retest'`) and is reachable from the home screen, athlete profile, and mid-session action menu. No single entry point owns it.
+- **Peak Power Test accessible from multiple entry points** — `discovery-test.tsx` accepts a `mode` param (`'discovery' | 'targeted_retest'`) and is reachable from the Training Setup screen, athlete profile, and mid-session action menu. No single entry point owns it.
 
 ---
 

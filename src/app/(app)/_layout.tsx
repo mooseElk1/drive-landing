@@ -7,10 +7,11 @@ import { HeaderBackButton } from '@/components/ui/header-back-button';
 import {
   Edit as EditIcon,
   Feed as FeedIcon,
-  Home as HomeIcon,
   Profile as ProfileIcon,
-  Rate as RateIcon,
   Settings as SettingsIcon,
+  Sliders as SlidersIcon,
+  TrendingUp as TrendingUpIcon,
+  Waveform as WaveformIcon,
 } from '@/components/ui/icons';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
 import { translate } from '@/lib/i18n/utils';
@@ -37,10 +38,26 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="home"
+        name="power-profile"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <HomeIcon color={color} />,
+          title: 'Power Profile',
+          tabBarIcon: ({ color }) => <TrendingUpIcon color={color} />,
+          headerRight: ({ tintColor }) => (
+            <Pressable
+              onPress={() => router.push('/profile-setup')}
+              hitSlop={10}
+              style={headerIconButtonStyle}
+            >
+              <ProfileIcon color={tintColor} />
+            </Pressable>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="training-setup"
+        options={{
+          title: 'Training Setup',
+          tabBarIcon: ({ color }) => <SlidersIcon color={color} />,
           headerRight: ({ tintColor }) => (
             <Pressable
               onPress={() => router.push('/profile-setup')}
@@ -56,24 +73,7 @@ export default function TabLayout() {
         name="workout"
         options={{
           title: 'Workout',
-          tabBarIcon: ({ color }) => <FeedIcon color={color} />,
-          headerRight: ({ tintColor }) => (
-            <Pressable
-              onPress={() => router.push('/profile-setup')}
-              hitSlop={10}
-              style={headerIconButtonStyle}
-            >
-              <ProfileIcon color={tintColor} />
-            </Pressable>
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="power-profile"
-        options={{
-          title: 'Power Profile',
-          tabBarIcon: ({ color }) => <RateIcon color={color} />,
+          tabBarIcon: ({ color }) => <WaveformIcon color={color} />,
           headerRight: ({ tintColor }) => (
             <Pressable
               onPress={() => router.push('/profile-setup')}
