@@ -102,7 +102,7 @@ export function AthleteProfileEditScreen(): React.ReactElement {
       sex: sex ?? null,
       updatedAt: now,
     });
-    router.back();
+    router.replace('/profile-setup');
   };
 
   return (
@@ -169,7 +169,7 @@ export function AthleteProfileEditScreen(): React.ReactElement {
                 variant="secondary"
                 testID="cancel-edit"
                 label={translate('powerProfile.common.cancel')}
-                onPress={() => router.back()}
+                onPress={() => router.replace('/profile-setup')}
               />
             </View>
             <View className="flex-1">
