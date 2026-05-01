@@ -2,7 +2,13 @@
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { Pressable, SegmentedControl, Text, Tile, View } from '@/components/ui';
+import {
+  PillToggleChip,
+  SegmentedControl,
+  Text,
+  Tile,
+  View,
+} from '@/components/ui';
 import {
   type ChartPointSelection,
   getMostRecentPplTestSprintIds,
@@ -163,7 +169,7 @@ export function PowerProfileChartCard(props: {
 
           <View className="flex-row items-center gap-2">
             {bwAvailable ? (
-              <Chip
+              <PillToggleChip
                 label="BW"
                 active={showBw}
                 onPress={() => setShowBw((v) => !v)}
@@ -171,7 +177,7 @@ export function PowerProfileChartCard(props: {
               />
             ) : null}
             {pplAvailable ? (
-              <Chip
+              <PillToggleChip
                 label="PPL"
                 active={showPpl}
                 onPress={() => setShowPpl((v) => !v)}
@@ -211,34 +217,5 @@ export function PowerProfileChartCard(props: {
         />
       </View>
     </Tile>
-  );
-}
-
-function Chip({
-  label,
-  active,
-  onPress,
-  testID,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  testID?: string;
-}) {
-  return (
-    <Pressable
-      className="rounded-full border px-3 py-1"
-      style={{
-        backgroundColor: active ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.04)',
-        borderColor: active ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.10)',
-      }}
-      onPress={onPress}
-      testID={testID}
-      accessibilityRole="button"
-    >
-      <Text className="text-xs font-extrabold tracking-wide text-neutral-900 dark:text-neutral-100">
-        {label}
-      </Text>
-    </Pressable>
   );
 }

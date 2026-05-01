@@ -9,6 +9,7 @@ export * from './image';
 export * from './input';
 export * from './list';
 export * from './modal';
+export * from './pill-chip';
 export * from './progress-bar';
 export * from './segmented-control';
 export * from './select';
