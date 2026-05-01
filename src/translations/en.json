@@ -43,7 +43,7 @@
         "description": "Use this to establish peak power. Rules will be refined later.",
         "start": "Start test"
       },
-      "title": "Home",
+      "title": "Session Setup",
       "training": {
         "defaultFree": "Default: Free training",
         "defaultPeakPower": "Default: Peak Power (PB {{power}} W{{loadKg}})",
