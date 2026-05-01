@@ -8,22 +8,28 @@ export function PillToggleChip({
   active,
   onPress,
   testID,
+  minWidthClassName = 'min-w-10',
+  containerClassName,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
   testID?: string;
+  minWidthClassName?: string;
+  containerClassName?: string;
 }): React.ReactElement {
   const container =
-    'flex-row overflow-hidden rounded-full bg-neutral-200 p-1 dark:bg-charcoal-800';
-  const option = `px-2 py-1.5 ${
+    `flex-row overflow-hidden rounded-full bg-neutral-200 p-1 dark:bg-charcoal-800 ${
+      containerClassName ?? ''
+    }`.trim();
+  const option = `items-center justify-center px-2 py-1 ${minWidthClassName} ${
     active ? 'rounded-full bg-white dark:bg-charcoal-950' : 'rounded-full'
   }`;
   const labelClassName = `text-center text-xs font-semibold ${
     active
       ? 'text-neutral-900 dark:text-white'
       : 'text-neutral-600 dark:text-neutral-300'
-  }`;
+  } leading-none`;
 
   return (
     <View className={container}>
