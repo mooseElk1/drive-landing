@@ -64,7 +64,7 @@
       },
       "editTitle": "Edit profile",
       "fields": {
-        "bodyWeightKg": "Body weight (kg) (optional)",
+        "bodyWeightKg": "Body weight (optional)",
         "name": "Athlete name"
       },
       "noAthlete": "No athlete profile found on this device.",
