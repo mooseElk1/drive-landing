@@ -10,12 +10,15 @@ import {
   Button,
   ControlledInput,
   ControlledSelect,
+  SegmentedControl,
   Text,
   Tile,
   View,
 } from '@/components/ui';
 import { STRENGTH_STANDARDS } from '@/features/power-profile/constants';
 import { translate } from '@/lib/i18n/utils';
+import { formatMassForUnit, lbsToKg, type MassUnit } from '@/lib/mass-units';
+import { useUnitPreferencesStore } from '@/store/unit-preferences';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
 import type { AthleteProfile } from '../types/athlete-profile';
@@ -28,13 +31,25 @@ const schema = z.object({
 
 type FormType = z.infer<typeof schema>;
 
-function parseOptionalKg(input: string | undefined): number | null {
+function parseOptionalMassToKg(params: {
+  input: string | undefined;
+  unit: MassUnit;
+}): number | null {
+  const { input, unit } = params;
   const trimmed = (input ?? '').trim();
   if (trimmed.length === 0) return null;
   const n = Number(trimmed);
   if (!Number.isFinite(n)) return null;
-  if (n <= 0 || n >= 500) return null;
-  return n;
+  if (n <= 0) return null;
+
+  if (unit === 'kg') {
+    if (n >= 500) return null;
+    return n;
+  }
+
+  // lbs
+  if (n >= 1102) return null;
+  return lbsToKg(n);
 }
 
 function createAthleteProfile(params: {
@@ -65,6 +80,9 @@ function createAthleteProfile(params: {
 export function AthleteProfileSetupScreen(): React.ReactElement {
   const router = useRouter();
   useWindowDimensions();
+  const massUnit = useUnitPreferencesStore((s) => s.massUnit);
+  const setMassUnit = useUnitPreferencesStore((s) => s.setMassUnit);
+
   const { control, handleSubmit, reset } = useForm<FormType>({
     resolver: zodResolver(schema),
     defaultValues: { name: '', bodyWeightKg: '', sex: undefined },
@@ -89,12 +107,12 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
       name: athlete.name,
       bodyWeightKg:
         typeof athlete.bodyWeightKg === 'number'
-          ? `${athlete.bodyWeightKg}`
+          ? formatMassForUnit(athlete.bodyWeightKg, massUnit)
           : '',
       sex: athlete.sex ?? undefined,
     });
     if (!activeAthleteId) setActiveAthleteId(athlete.id);
-  }, [activeAthleteId, athlete, reset, setActiveAthleteId]);
+  }, [activeAthleteId, athlete, massUnit, reset, setActiveAthleteId]);
 
   function getStrengthTierLabel(params: {
     sex: 'male' | 'female';
@@ -111,7 +129,10 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
     if (!athlete) {
       const created = createAthleteProfile({
         name,
-        bodyWeightKg: parseOptionalKg(bodyWeightKg),
+        bodyWeightKg: parseOptionalMassToKg({
+          input: bodyWeightKg,
+          unit: massUnit,
+        }),
         sex: sex ?? null,
       });
       upsertAthlete(created);
@@ -148,6 +169,22 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
               testID="athlete-name"
               autoCapitalize="words"
             />
+
+            <View className="my-2">
+              <SegmentedControl<MassUnit>
+                size="sm"
+                value={massUnit}
+                options={[
+                  { value: 'kg', label: 'kg' },
+                  { value: 'lbs', label: 'lbs' },
+                ]}
+                onChange={(next) => {
+                  setMassUnit(next);
+                  // In create mode there is no stored athlete BW; preserve user typing.
+                }}
+                testID="athlete-bodyweight-unit-toggle"
+              />
+            </View>
 
             <ControlledInput
               name="bodyWeightKg"
@@ -189,7 +226,9 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
                 {translate('powerProfile.profileSetup.fields.bodyWeightKg')}
               </Text>
               <Text className="font-semibold">
-                {athlete?.bodyWeightKg ? `${athlete.bodyWeightKg}` : '—'}
+                {typeof athlete?.bodyWeightKg === 'number'
+                  ? `${formatMassForUnit(athlete.bodyWeightKg, massUnit)} ${massUnit}`
+                  : '—'}
               </Text>
             </View>
 

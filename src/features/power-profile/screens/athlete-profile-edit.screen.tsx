@@ -9,11 +9,14 @@ import {
   Button,
   ControlledInput,
   ControlledSelect,
+  SegmentedControl,
   Text,
   Tile,
   View,
 } from '@/components/ui';
 import { translate } from '@/lib/i18n/utils';
+import { formatMassForUnit, lbsToKg, type MassUnit } from '@/lib/mass-units';
+import { useUnitPreferencesStore } from '@/store/unit-preferences';
 
 import { useAthleteProfileStore } from '../store/athlete-profile-store';
 
@@ -25,21 +28,35 @@ const schema = z.object({
 
 type FormType = z.infer<typeof schema>;
 
-function parseOptionalKg(input: string | undefined): number | null {
+function parseOptionalMassToKg(params: {
+  input: string | undefined;
+  unit: MassUnit;
+}): number | null {
+  const { input, unit } = params;
   const trimmed = (input ?? '').trim();
   if (trimmed.length === 0) return null;
   const n = Number(trimmed);
   if (!Number.isFinite(n)) return null;
-  if (n <= 0 || n >= 500) return null;
-  return n;
+  if (n <= 0) return null;
+
+  if (unit === 'kg') {
+    if (n >= 500) return null;
+    return n;
+  }
+
+  // lbs
+  if (n >= 1102) return null;
+  return lbsToKg(n);
 }
 
 export function AthleteProfileEditScreen(): React.ReactElement {
   const router = useRouter();
   const athlete = useAthleteProfileStore((s) => s.athletes[0] ?? null);
   const upsertAthlete = useAthleteProfileStore((s) => s.upsertAthlete);
+  const massUnit = useUnitPreferencesStore((s) => s.massUnit);
+  const setMassUnit = useUnitPreferencesStore((s) => s.setMassUnit);
 
-  const { control, handleSubmit, reset } = useForm<FormType>({
+  const { control, handleSubmit, reset, setValue } = useForm<FormType>({
     resolver: zodResolver(schema),
     defaultValues: { name: '', bodyWeightKg: '', sex: undefined },
   });
@@ -50,11 +67,11 @@ export function AthleteProfileEditScreen(): React.ReactElement {
       name: athlete.name,
       bodyWeightKg:
         typeof athlete.bodyWeightKg === 'number'
-          ? `${athlete.bodyWeightKg}`
+          ? formatMassForUnit(athlete.bodyWeightKg, massUnit)
           : '',
       sex: athlete.sex ?? undefined,
     });
-  }, [athlete, reset]);
+  }, [athlete, massUnit, reset]);
 
   if (!athlete) {
     return (
@@ -78,7 +95,10 @@ export function AthleteProfileEditScreen(): React.ReactElement {
     upsertAthlete({
       ...athlete,
       name,
-      bodyWeightKg: parseOptionalKg(bodyWeightKg),
+      bodyWeightKg: parseOptionalMassToKg({
+        input: bodyWeightKg,
+        unit: massUnit,
+      }),
       sex: sex ?? null,
       updatedAt: now,
     });
@@ -100,6 +120,28 @@ export function AthleteProfileEditScreen(): React.ReactElement {
             testID="athlete-name"
             autoCapitalize="words"
           />
+
+          <View className="my-2">
+            <SegmentedControl<MassUnit>
+              size="sm"
+              value={massUnit}
+              options={[
+                { value: 'kg', label: 'kg' },
+                { value: 'lbs', label: 'lbs' },
+              ]}
+              onChange={(next) => {
+                setMassUnit(next);
+                if (typeof athlete.bodyWeightKg === 'number') {
+                  setValue(
+                    'bodyWeightKg',
+                    formatMassForUnit(athlete.bodyWeightKg, next),
+                    { shouldDirty: false }
+                  );
+                }
+              }}
+              testID="athlete-bodyweight-unit-toggle"
+            />
+          </View>
 
           <ControlledInput
             name="bodyWeightKg"

@@ -2,10 +2,75 @@ import { useColorScheme } from 'nativewind';
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View as RNView } from 'react-native';
 
-import { Pressable, Text, Tile } from '@/components/ui';
+import { Pressable, SegmentedControl, Text, Tile } from '@/components/ui';
 import colors from '@/components/ui/colors';
 import { Modal, useModal } from '@/components/ui/modal';
+import { formatMassForUnit, lbsToKg, type MassUnit } from '@/lib/mass-units';
 import { useCalculationConfigStore } from '@/store/calculation-config';
+import { useUnitPreferencesStore } from '@/store/unit-preferences';
+
+function MassUnitToggle({
+  massUnit,
+  onChange,
+}: {
+  massUnit: MassUnit;
+  onChange: (unit: MassUnit) => void;
+}) {
+  return (
+    <RNView style={sheetStyles.unitToggleRow}>
+      <SegmentedControl<MassUnit>
+        size="sm"
+        value={massUnit}
+        options={[
+          { value: 'kg', label: 'kg' },
+          { value: 'lbs', label: 'lbs' },
+        ]}
+        onChange={onChange}
+        testID="sled-mass-unit-toggle"
+      />
+    </RNView>
+  );
+}
+
+function MassValueInputRow({
+  draft,
+  setDraft,
+  unitLabel,
+  inputBg,
+  inputBorder,
+  inputText,
+  unitColor,
+}: {
+  draft: string;
+  setDraft: (next: string) => void;
+  unitLabel: string;
+  inputBg: string;
+  inputBorder: string;
+  inputText: string;
+  unitColor: string;
+}) {
+  return (
+    <RNView
+      style={[
+        sheetStyles.inputRow,
+        { backgroundColor: inputBg, borderColor: inputBorder },
+      ]}
+    >
+      <TextInput
+        style={[sheetStyles.input, { color: inputText }]}
+        value={draft}
+        onChangeText={setDraft}
+        keyboardType="decimal-pad"
+        selectTextOnFocus
+        autoFocus
+        placeholderTextColor={colors.neutral[500]}
+      />
+      <Text style={[sheetStyles.inputUnit, { color: unitColor }]}>
+        {unitLabel}
+      </Text>
+    </RNView>
+  );
+}
 
 function EditMassModal({
   modal,
@@ -18,12 +83,14 @@ function EditMassModal({
 }) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const [draft, setDraft] = useState(currentMass.toString());
+  const massUnit = useUnitPreferencesStore((s) => s.massUnit);
+  const setMassUnit = useUnitPreferencesStore((s) => s.setMassUnit);
+  const [draft, setDraft] = useState(formatMassForUnit(currentMass, massUnit));
 
   // Re-sync draft whenever the stored mass changes (e.g. after a successful save)
   useEffect(() => {
-    setDraft(currentMass.toString());
-  }, [currentMass]);
+    setDraft(formatMassForUnit(currentMass, massUnit));
+  }, [currentMass, massUnit]);
 
   const sheetBg = isDark ? '#1E1E1E' : '#F5F5F5';
   const handleBg = isDark ? '#474747' : '#D4D4D4';
@@ -35,7 +102,8 @@ function EditMassModal({
   const handleConfirm = () => {
     const parsed = parseFloat(draft);
     if (!isNaN(parsed) && parsed > 0) {
-      onConfirm(parsed);
+      const valueKg = massUnit === 'lbs' ? lbsToKg(parsed) : parsed;
+      onConfirm(valueKg);
       modal.dismiss();
     }
   };
@@ -49,25 +117,16 @@ function EditMassModal({
       handleIndicatorStyle={{ backgroundColor: handleBg }}
     >
       <RNView style={sheetStyles.body}>
-        <RNView
-          style={[
-            sheetStyles.inputRow,
-            { backgroundColor: inputBg, borderColor: inputBorder },
-          ]}
-        >
-          <TextInput
-            style={[sheetStyles.input, { color: inputText }]}
-            value={draft}
-            onChangeText={setDraft}
-            keyboardType="decimal-pad"
-            selectTextOnFocus
-            autoFocus
-            placeholderTextColor={colors.neutral[500]}
-          />
-          <Text style={[sheetStyles.inputUnit, { color: unitColor }]}>
-            {'kg'}
-          </Text>
-        </RNView>
+        <MassUnitToggle massUnit={massUnit} onChange={setMassUnit} />
+        <MassValueInputRow
+          draft={draft}
+          setDraft={setDraft}
+          unitLabel={massUnit}
+          inputBg={inputBg}
+          inputBorder={inputBorder}
+          inputText={inputText}
+          unitColor={unitColor}
+        />
 
         <Pressable onPress={handleConfirm} style={sheetStyles.confirmBtn}>
           <Text style={sheetStyles.confirmLabel}>{'Set'}</Text>
@@ -82,6 +141,7 @@ export function SledMassTile({ className }: { className?: string }) {
   const isDark = colorScheme === 'dark';
   const modal = useModal();
   const { config, updateConfig } = useCalculationConfigStore();
+  const massUnit = useUnitPreferencesStore((s) => s.massUnit);
 
   // Keep a stable ref to current mass so modal re-renders don't reset draft
   const massRef = useRef(config.mass);
@@ -106,9 +166,11 @@ export function SledMassTile({ className }: { className?: string }) {
         </Text>
         <RNView style={tileStyles.valueRow}>
           <Text style={[tileStyles.value, { color: valueColor }]}>
-            {config.mass.toFixed(1)}
+            {formatMassForUnit(config.mass, massUnit)}
           </Text>
-          <Text style={[tileStyles.unit, { color: unitColor }]}>{'KG'}</Text>
+          <Text style={[tileStyles.unit, { color: unitColor }]}>
+            {massUnit.toUpperCase()}
+          </Text>
         </RNView>
       </Tile>
 
@@ -150,6 +212,9 @@ const sheetStyles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
     gap: 16,
+  },
+  unitToggleRow: {
+    alignItems: 'flex-start',
   },
   inputRow: {
     flexDirection: 'row',
