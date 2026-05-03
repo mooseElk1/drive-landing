@@ -55,6 +55,8 @@ type PowerSessionState = {
 
   setInterruptedAt: (ts: number | null) => void;
 
+  setTargetZone: (zone: TrainingZone | null) => void;
+
   endSession: (endedAt?: number) => void;
 
   discardSession: () => void;
@@ -155,6 +157,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
         }),
 
       setInterruptedAt: (ts) => set({ interruptedAt: ts }),
+
+      setTargetZone: (zone) => set({ targetZone: zone }),
 
       endSession: (endedAt = Date.now()) =>
         set({ endedAt, interruptedAt: null }),

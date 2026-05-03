@@ -17,8 +17,11 @@ import {
 } from '@/components/ui';
 import { Modal, useModal } from '@/components/ui/modal';
 import { Constants } from '@/constants';
-import { LoadRecommendationTile } from '@/features/power-profile/components/load-recommendation-tile';
 import { SessionPeakTiles } from '@/features/power-profile/components/session-peak-tiles';
+import {
+  ZonePrescriptionCompactTile,
+  ZonePrescriptionExpandedPanel,
+} from '@/features/power-profile/components/zone-prescription-selector';
 import { finalizeDiscoveryPPL } from '@/features/power-profile/services/discovery-ppl-finalization-service';
 import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
@@ -351,8 +354,6 @@ function WorkoutScreen() {
       isSaving={isSaving}
       showEndSession={Boolean(sessionId) && sprintIds.length > 0}
       sessionId={sessionId}
-      sessionMode={sessionMode}
-      loadSuggestionsEnabled={loadSuggestionsEnabled}
       toggleLogging={toggleLogging}
       onEndSession={() => void handleEndSession()}
       onSave={async (data) => {
@@ -434,32 +435,28 @@ function SaveSprintModal({
   );
 }
 
-function LoadRow({
-  sessionId,
-  loadSuggestionsEnabled,
-  sessionMode,
-}: {
-  sessionId: string | null;
-  loadSuggestionsEnabled: boolean;
-  sessionMode: PowerProfileSessionMode;
-}) {
-  const isTestSession =
-    sessionMode === 'test' ||
-    sessionMode === 'discovery' ||
-    sessionMode === 'targeted_retest';
-  const showRecommendation =
-    Boolean(sessionId) && (loadSuggestionsEnabled || isTestSession);
+function LoadRow({ sessionId }: { sessionId: string | null }) {
+  const [zonePanelExpanded, setZonePanelExpanded] = useState(false);
 
-  if (showRecommendation) {
-    return (
-      <View className="mx-5 mb-2 flex-row gap-2">
-        <SledMassTile className="flex-1 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900" />
-        <LoadRecommendationTile />
-      </View>
-    );
+  if (!sessionId) {
+    return <SledMassTile />;
   }
 
-  return <SledMassTile />;
+  return (
+    <View className="mx-5 mb-2">
+      <View className="flex-row gap-2">
+        <SledMassTile className="flex-1 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900" />
+        <ZonePrescriptionCompactTile
+          expanded={zonePanelExpanded}
+          onToggle={() => setZonePanelExpanded((e) => !e)}
+        />
+      </View>
+      <ZonePrescriptionExpandedPanel
+        visible={zonePanelExpanded}
+        onCollapse={() => setZonePanelExpanded(false)}
+      />
+    </View>
+  );
 }
 
 function WorkoutContent({
@@ -467,8 +464,6 @@ function WorkoutContent({
   isSaving,
   showEndSession,
   sessionId,
-  sessionMode,
-  loadSuggestionsEnabled,
   toggleLogging,
   onEndSession,
   onSave,
@@ -479,8 +474,6 @@ function WorkoutContent({
   isSaving: boolean;
   showEndSession: boolean;
   sessionId: string | null;
-  sessionMode: PowerProfileSessionMode;
-  loadSuggestionsEnabled: boolean;
   toggleLogging: () => void;
   onEndSession: () => void;
   onSave: (data: WorkoutClass) => Promise<void>;
@@ -504,11 +497,7 @@ function WorkoutContent({
             {showEndSession ? <SessionPeakTiles /> : null}
             <ConfigurableChart isLogging={isLogging} />
             <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
-            <LoadRow
-              sessionId={sessionId}
-              sessionMode={sessionMode}
-              loadSuggestionsEnabled={loadSuggestionsEnabled}
-            />
+            <LoadRow sessionId={sessionId} />
             {showEndSession ? (
               <View className="mt-3 pb-2">
                 <Button
