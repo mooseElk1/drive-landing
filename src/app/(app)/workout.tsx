@@ -493,8 +493,10 @@ function WorkoutContent({
           contentContainerStyle={{ paddingBottom: 24 }}
         >
           <SafeAreaView className="flex-1" edges={['left', 'right', 'bottom']}>
-            <LiveStatTiles />
-            {showEndSession ? <SessionPeakTiles /> : null}
+            <View className="-mx-4">
+              <LiveStatTiles />
+              {showEndSession ? <SessionPeakTiles /> : null}
+            </View>
             <ConfigurableChart isLogging={isLogging} />
             <StartStopButton isLogging={isLogging} onPress={toggleLogging} />
             <LoadRow sessionId={sessionId} />
