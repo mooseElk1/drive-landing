@@ -28,20 +28,6 @@ export function LiveStatTiles() {
     <View style={styles.row}>
       <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
         <View style={styles.content}>
-          <Text style={[styles.label, { color: labelColor }]}>
-            {'VELOCITY'}
-          </Text>
-          <View style={styles.valueRow}>
-            <Text style={[styles.value, { color: valueColor }]}>
-              {currentVelocity !== null ? currentVelocity.toFixed(2) : '--'}
-            </Text>
-            <Text style={[styles.unit, { color: unitColor }]}>{'m/s'}</Text>
-          </View>
-        </View>
-      </Tile>
-
-      <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
-        <View style={styles.content}>
           <Text style={[styles.label, { color: labelColor }]}>{'POWER'}</Text>
           <View style={styles.valueRow}>
             <Text style={[styles.value, { color: valueColor }]}>
@@ -50,6 +36,20 @@ export function LiveStatTiles() {
                 : '--'}
             </Text>
             <Text style={[styles.unit, { color: unitColor }]}>{'W'}</Text>
+          </View>
+        </View>
+      </Tile>
+
+      <Tile variant="stat" className="bg-neutral-100 dark:bg-charcoal-900">
+        <View style={styles.content}>
+          <Text style={[styles.label, { color: labelColor }]}>
+            {'VELOCITY'}
+          </Text>
+          <View style={styles.valueRow}>
+            <Text style={[styles.value, { color: valueColor }]}>
+              {currentVelocity !== null ? currentVelocity.toFixed(2) : '--'}
+            </Text>
+            <Text style={[styles.unit, { color: unitColor }]}>{'m/s'}</Text>
           </View>
         </View>
       </Tile>
