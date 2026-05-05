@@ -28,8 +28,10 @@ export interface AccelerationConfig {
   readonly zuptGyroThreshold: number;
   /** Minimum consecutive rest duration before ZUPT triggers (seconds). */
   readonly zuptMinTime: number;
-  /** Low-pass filter cutoff frequency in Hz for the integration branch. Default: 17.5 Hz. */
+  /** Low-pass filter cutoff frequency in Hz for the drive-feature branch (StepFeatureWindow). Default: 17.5 Hz. */
   readonly lpfCutoffHz: number;
+  /** Low-pass filter cutoff frequency in Hz for the velocity-integration-only branch. Default: 3.0 Hz. */
+  readonly velLpfCutoffHz: number;
   /** EMA alpha coefficient for bias update during ZUPT_ACTIVE. Default: 0.1. */
   readonly zuptBiasAlphaActive: number;
 }
@@ -66,6 +68,6 @@ export interface CalculationServiceConfig {
   readonly acceleration?: Readonly<Partial<AccelerationConfig>>;
   /** Velocity integration config overrides (propagated to VelocityCalculationService). */
   readonly velocity?: Readonly<Partial<VelocityConfig>>;
-  /** Which acceleration channel to integrate for velocity: 'raw', 'lp', or 'hp'. Default 'lp'. */
-  readonly integrationAccelSource?: 'raw' | 'lp' | 'hp';
+  /** Which acceleration channel to integrate for velocity: 'raw', 'lp', 'hp', or 'vel_lp'. Default 'vel_lp'. */
+  readonly integrationAccelSource?: 'raw' | 'lp' | 'hp' | 'vel_lp';
 }

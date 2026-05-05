@@ -31,7 +31,12 @@ class BufferedVelocityLogger implements VelocityLogger {
 const DEFAULT_VELOCITY_CONFIG: Readonly<VelocityConfig> = {
   dt: Constants.Foo.dt,
   velLeak: Constants.VelocityIntegrator.velLeak,
-  integrationAccelSource: 'lp',
+  integrationAccelSource: 'vel_lp',
+  velFloorActivationThreshold:
+    Constants.VelocityIntegrator.velFloorActivationThreshold,
+  velFloorDirectionThreshold:
+    Constants.VelocityIntegrator.velFloorDirectionThreshold,
+  velFloorMinSamples: Constants.VelocityIntegrator.velFloorMinSamples,
 };
 
 /**
@@ -56,6 +61,12 @@ export class VelocityCalculationService
   private previousVelocity: VelocityVector;
   private sessionStartTimeSec: number | null;
 
+  // Sprint-direction floor state
+  private floorArmed: boolean;
+  private sprintDirUnit: { x: number; y: number; z: number };
+  private prevVelAbs: number;
+  private floorBelowCount: number;
+
   protected requiredChannels = [
     CHANNELS.TIMESTAMP,
     CHANNELS.TIME,
@@ -72,6 +83,9 @@ export class VelocityCalculationService
     CHANNELS.ACCEL_X_LP,
     CHANNELS.ACCEL_Y_LP,
     CHANNELS.ACCEL_Z_LP,
+    CHANNELS.ACCEL_X_VEL_LP,
+    CHANNELS.ACCEL_Y_VEL_LP,
+    CHANNELS.ACCEL_Z_VEL_LP,
     CHANNELS.ZUPT_STATUS,
   ];
 
@@ -82,6 +96,10 @@ export class VelocityCalculationService
 
     this.previousVelocity = { x: 0, y: 0, z: 0, abs: 0 };
     this.sessionStartTimeSec = null;
+    this.floorArmed = false;
+    this.sprintDirUnit = { x: 0, y: 0, z: 0 };
+    this.prevVelAbs = 0;
+    this.floorBelowCount = 0;
   }
 
   updateConfig(patch: Partial<VelocityConfig>): void {
@@ -91,6 +109,12 @@ export class VelocityCalculationService
   /** Returns the three acceleration channel keys to use for integration. */
   private _resolveAccelChannels(): [string, string, string] {
     switch (this.config.integrationAccelSource) {
+      case 'vel_lp':
+        return [
+          CHANNELS.ACCEL_X_VEL_LP,
+          CHANNELS.ACCEL_Y_VEL_LP,
+          CHANNELS.ACCEL_Z_VEL_LP,
+        ];
       case 'lp':
         return [CHANNELS.ACCEL_X_LP, CHANNELS.ACCEL_Y_LP, CHANNELS.ACCEL_Z_LP];
       case 'hp':
@@ -122,6 +146,52 @@ export class VelocityCalculationService
     return { x: vx, y: vy, z: vz, abs: vectorMagnitude(vx, vy, vz) };
   }
 
+  /**
+   * Apply the sprint-direction component floor to a candidate velocity vector.
+   * Returns the (possibly zeroed) velocity and updates internal floor state.
+   * Call only when not at rest and after _integrateVelocity.
+   */
+  private _applySprintFloor(
+    vel: VelocityVector,
+    thresholds: {
+      activation: number;
+      direction: number;
+      minSamples: number;
+    }
+  ): VelocityVector {
+    const { activation, direction, minSamples } = thresholds;
+    if (!this.floorArmed && vel.abs >= activation) {
+      this.floorArmed = true;
+      this.floorBelowCount = 0;
+    }
+    if (!this.floorArmed) return vel;
+
+    if (vel.abs >= this.prevVelAbs && vel.abs > 0) {
+      this.sprintDirUnit = {
+        x: vel.x / vel.abs,
+        y: vel.y / vel.abs,
+        z: vel.z / vel.abs,
+      };
+    }
+
+    const sprintComponent =
+      vel.x * this.sprintDirUnit.x +
+      vel.y * this.sprintDirUnit.y +
+      vel.z * this.sprintDirUnit.z;
+
+    if (sprintComponent < direction) {
+      this.floorBelowCount++;
+      if (this.floorBelowCount >= minSamples) {
+        this.floorArmed = false;
+        this.floorBelowCount = 0;
+        return { x: 0, y: 0, z: 0, abs: 0 };
+      }
+    } else {
+      this.floorBelowCount = 0;
+    }
+    return vel;
+  }
+
   calculate(data: ProcessedSensorData): void {
     this.ensureChannels(data);
     this.computeSampleCountFor([
@@ -133,19 +203,37 @@ export class VelocityCalculationService
 
     const ch = this.channels;
     const [axCh, ayCh, azCh] = this._resolveAccelChannels();
+    const {
+      velFloorActivationThreshold = Constants.VelocityIntegrator
+        .velFloorActivationThreshold,
+      velFloorDirectionThreshold = Constants.VelocityIntegrator
+        .velFloorDirectionThreshold,
+      velFloorMinSamples = Constants.VelocityIntegrator.velFloorMinSamples,
+    } = this.config;
 
     for (let i = 0; i < this.sampleCount; i++) {
       const aX = ch[axCh]![i] ?? ch[CHANNELS.ACCEL_X_OUTPUT]![i]!;
       const aY = ch[ayCh]![i] ?? ch[CHANNELS.ACCEL_Y_OUTPUT]![i]!;
       const aZ = ch[azCh]![i] ?? ch[CHANNELS.ACCEL_Z_OUTPUT]![i]!;
-
       const integrated = this._integrateVelocity(aX, aY, aZ);
-
       const isRest =
         ((ch[CHANNELS.ZUPT_STATUS]?.[i] ?? 0) & ZUPTStatus.ZUPT_ACTIVE) !== 0;
-      const currentVelocity: VelocityVector = isRest
-        ? { x: 0, y: 0, z: 0, abs: 0 }
-        : integrated;
+
+      let currentVelocity: VelocityVector;
+      if (isRest) {
+        currentVelocity = { x: 0, y: 0, z: 0, abs: 0 };
+        this.floorArmed = false;
+        this.floorBelowCount = 0;
+        this.prevVelAbs = 0;
+      } else {
+        currentVelocity = this._applySprintFloor(integrated, {
+          activation: velFloorActivationThreshold,
+          direction: velFloorDirectionThreshold,
+          minSamples: velFloorMinSamples,
+        });
+      }
+
+      this.prevVelAbs = currentVelocity.abs;
       this.previousVelocity = currentVelocity;
 
       const timestampSec = toSeconds(ch[CHANNELS.TIMESTAMP]?.[i]);

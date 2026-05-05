@@ -90,8 +90,9 @@ function AlgorithmSection() {
       />
       <SelectSettingItem
         label="settings.integration_source"
-        value={vel.integrationAccelSource ?? 'lp'}
+        value={vel.integrationAccelSource ?? 'vel_lp'}
         options={[
+          { value: 'vel_lp', labelKey: 'settings.integration_source_vel_lp' },
           { value: 'raw', labelKey: 'settings.integration_source_raw' },
           { value: 'lp', labelKey: 'settings.integration_source_lp' },
           { value: 'hp', labelKey: 'settings.integration_source_hp' },
@@ -99,6 +100,30 @@ function AlgorithmSection() {
         onChange={(integrationAccelSource) =>
           updateVelocityConfig({ integrationAccelSource })
         }
+      />
+      <NumericSettingItem
+        label="settings.vel_floor_activation"
+        value={
+          vel.velFloorActivationThreshold ??
+          defaultVel.velFloorActivationThreshold ??
+          0.5
+        }
+        onChange={(velFloorActivationThreshold) =>
+          updateVelocityConfig({ velFloorActivationThreshold })
+        }
+        decimalPlaces={2}
+      />
+      <NumericSettingItem
+        label="settings.vel_floor_direction"
+        value={
+          vel.velFloorDirectionThreshold ??
+          defaultVel.velFloorDirectionThreshold ??
+          0.08
+        }
+        onChange={(velFloorDirectionThreshold) =>
+          updateVelocityConfig({ velFloorDirectionThreshold })
+        }
+        decimalPlaces={3}
       />
     </ItemsContainer>
   );
@@ -176,6 +201,14 @@ function AccelerationSection() {
         label="settings.lpf_cutoff"
         value={acc.lpfCutoffHz ?? defaultAcc.lpfCutoffHz}
         onChange={(lpfCutoffHz) => updateAccelerationConfig({ lpfCutoffHz })}
+        decimalPlaces={1}
+      />
+      <NumericSettingItem
+        label="settings.vel_lpf_cutoff"
+        value={acc.velLpfCutoffHz ?? defaultAcc.velLpfCutoffHz}
+        onChange={(velLpfCutoffHz) =>
+          updateAccelerationConfig({ velLpfCutoffHz })
+        }
         decimalPlaces={1}
       />
       <NumericSettingItem

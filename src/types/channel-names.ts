@@ -48,11 +48,17 @@ export const CHANNELS = {
   ACCEL_Z_OUTPUT_FILTERED: 'accz_output_filt',
   ACCEL_MAGNITUDE_OUTPUT_FILTERED: 'acc_mag_output_filt',
 
-  // Low-pass filtered output acceleration: for velocity integration branch
+  // Low-pass filtered output acceleration: 17.5 Hz branch for drive features
   ACCEL_X_LP: 'accx_lp',
   ACCEL_Y_LP: 'accy_lp',
   ACCEL_Z_LP: 'accz_lp',
   ACCEL_MAGNITUDE_LP: 'acc_mag_lp',
+
+  // Low-pass filtered output acceleration: 3 Hz branch for velocity integration only
+  ACCEL_X_VEL_LP: 'accx_vel_lp',
+  ACCEL_Y_VEL_LP: 'accy_vel_lp',
+  ACCEL_Z_VEL_LP: 'accz_vel_lp',
+  ACCEL_MAGNITUDE_VEL_LP: 'acc_mag_vel_lp',
 
   VELOCITY_X: 'velocity_x',
   VELOCITY_Y: 'velocity_y',

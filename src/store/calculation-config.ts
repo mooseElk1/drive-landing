@@ -28,6 +28,7 @@ export const DEFAULT_CALCULATION_CONFIG: CalculationServiceConfig = {
     smoothWindowSize: Constants.AccelerationProcessor.smoothWindowSize,
     hpfCutoffHz: Constants.AccelerationProcessor.hpfCutoffHz,
     lpfCutoffHz: Constants.AccelerationProcessor.lpfCutoffHz,
+    velLpfCutoffHz: Constants.AccelerationProcessor.velLpfCutoffHz,
     dt: Constants.Foo.dt,
     zuptAccelThreshold: Constants.ZuptDetector.zuptAccelThreshold,
     zuptGyroThreshold: Constants.ZuptDetector.zuptGyroThreshold,
@@ -37,7 +38,12 @@ export const DEFAULT_CALCULATION_CONFIG: CalculationServiceConfig = {
   velocity: {
     velLeak: Constants.VelocityIntegrator.velLeak,
     dt: Constants.Foo.dt,
-    integrationAccelSource: 'lp' as const,
+    integrationAccelSource: 'vel_lp' as const,
+    velFloorActivationThreshold:
+      Constants.VelocityIntegrator.velFloorActivationThreshold,
+    velFloorDirectionThreshold:
+      Constants.VelocityIntegrator.velFloorDirectionThreshold,
+    velFloorMinSamples: Constants.VelocityIntegrator.velFloorMinSamples,
   },
 };
 

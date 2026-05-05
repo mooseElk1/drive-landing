@@ -17,12 +17,19 @@ export class Constants {
   };
 
   static VelocityIntegrator = {
-    velLeak: 0.995, // velocity leak factor per update
+    velLeak: 0.999, // velocity leak factor per update (τ ≈ 10 s at 100 Hz)
+    /** Velocity magnitude (m/s) that arms the sprint-direction floor. */
+    velFloorActivationThreshold: 0.5,
+    /** Sprint-direction component (m/s) below which the floor begins counting. */
+    velFloorDirectionThreshold: 0.08,
+    /** Consecutive samples below the direction threshold before velocity is zeroed. */
+    velFloorMinSamples: 3,
   };
 
   static AccelerationProcessor = {
     hpfCutoffHz: 0.5, // Hz
-    lpfCutoffHz: 17.5, // Hz (integration branch)
+    lpfCutoffHz: 17.5, // Hz — drive-feature branch (StepFeatureWindow)
+    velLpfCutoffHz: 3.0, // Hz — velocity-integration-only branch
     smoothWindowSize: 5, // samples
     applyRotation: true,
     removeBias: true,
@@ -32,7 +39,7 @@ export class Constants {
   static ZuptDetector = {
     zuptAccelThreshold: 0.12, // m/s^2
     zuptGyroThreshold: 0.1, // rad/s
-    zuptMinTime: 0.15, // seconds
+    zuptMinTime: 0.4, // seconds — long enough to survive footstrike float phases
     /** Slow EMA coefficient for bias estimation during zero-velocity periods */
     zuptBiasAlpha: 0.01,
   };

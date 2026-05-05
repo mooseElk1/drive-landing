@@ -22,6 +22,7 @@ const DEFAULT_ACCELERATION_CONFIG: Readonly<AccelerationConfig> = {
   smoothWindowSize: Constants.AccelerationProcessor.smoothWindowSize,
   hpfCutoffHz: Constants.AccelerationProcessor.hpfCutoffHz,
   lpfCutoffHz: Constants.AccelerationProcessor.lpfCutoffHz,
+  velLpfCutoffHz: Constants.AccelerationProcessor.velLpfCutoffHz,
   dt: Constants.Foo.dt,
   zuptAccelThreshold: Constants.ZuptDetector.zuptAccelThreshold,
   zuptGyroThreshold: Constants.ZuptDetector.zuptGyroThreshold,
@@ -57,6 +58,7 @@ export class AccelerationCalculationService
     HighPassFirstOrder,
   ];
   private lpfs: [LowPassFirstOrder, LowPassFirstOrder, LowPassFirstOrder];
+  private velLpfs: [LowPassFirstOrder, LowPassFirstOrder, LowPassFirstOrder];
   private zuptDetector: ZUPTDetector;
   private bias: AxisTuple;
   protected requiredChannels = [
@@ -90,13 +92,18 @@ export class AccelerationCalculationService
     CHANNELS.ACCEL_Y_LP,
     CHANNELS.ACCEL_Z_LP,
     CHANNELS.ACCEL_MAGNITUDE_LP,
+    CHANNELS.ACCEL_X_VEL_LP,
+    CHANNELS.ACCEL_Y_VEL_LP,
+    CHANNELS.ACCEL_Z_VEL_LP,
+    CHANNELS.ACCEL_MAGNITUDE_VEL_LP,
   ];
 
   constructor(config?: Partial<AccelerationConfig>) {
     super();
     this.config = { ...DEFAULT_ACCELERATION_CONFIG, ...config };
 
-    const { smoothWindowSize, hpfCutoffHz, lpfCutoffHz, dt } = this.config;
+    const { smoothWindowSize, hpfCutoffHz, lpfCutoffHz, velLpfCutoffHz, dt } =
+      this.config;
     this.smoothers = [
       new MovingAverage(smoothWindowSize),
       new MovingAverage(smoothWindowSize),
@@ -111,6 +118,11 @@ export class AccelerationCalculationService
       new LowPassFirstOrder(lpfCutoffHz, dt),
       new LowPassFirstOrder(lpfCutoffHz, dt),
       new LowPassFirstOrder(lpfCutoffHz, dt),
+    ];
+    this.velLpfs = [
+      new LowPassFirstOrder(velLpfCutoffHz, dt),
+      new LowPassFirstOrder(velLpfCutoffHz, dt),
+      new LowPassFirstOrder(velLpfCutoffHz, dt),
     ];
     this.zuptDetector = new ZUPTDetector({
       acc_thresh: this.config.zuptAccelThreshold,
@@ -136,6 +148,13 @@ export class AccelerationCalculationService
         new LowPassFirstOrder(this.config.lpfCutoffHz, this.config.dt),
         new LowPassFirstOrder(this.config.lpfCutoffHz, this.config.dt),
         new LowPassFirstOrder(this.config.lpfCutoffHz, this.config.dt),
+      ];
+    }
+    if (patch.velLpfCutoffHz !== undefined || patch.dt !== undefined) {
+      this.velLpfs = [
+        new LowPassFirstOrder(this.config.velLpfCutoffHz, this.config.dt),
+        new LowPassFirstOrder(this.config.velLpfCutoffHz, this.config.dt),
+        new LowPassFirstOrder(this.config.velLpfCutoffHz, this.config.dt),
       ];
     }
   }
@@ -223,6 +242,16 @@ export class AccelerationCalculationService
     ch[CHANNELS.ACCEL_Y_LP]!.push(lpY);
     ch[CHANNELS.ACCEL_Z_LP]!.push(lpZ);
     ch[CHANNELS.ACCEL_MAGNITUDE_LP]!.push(vectorMagnitude(lpX, lpY, lpZ));
+
+    const vlpX = this.velLpfs[X].add(outX);
+    const vlpY = this.velLpfs[Y].add(outY);
+    const vlpZ = this.velLpfs[Z].add(outZ);
+    ch[CHANNELS.ACCEL_X_VEL_LP]!.push(vlpX);
+    ch[CHANNELS.ACCEL_Y_VEL_LP]!.push(vlpY);
+    ch[CHANNELS.ACCEL_Z_VEL_LP]!.push(vlpZ);
+    ch[CHANNELS.ACCEL_MAGNITUDE_VEL_LP]!.push(
+      vectorMagnitude(vlpX, vlpY, vlpZ)
+    );
   }
 
   calculate(data: ProcessedSensorData): void {
