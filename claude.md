@@ -502,49 +502,56 @@ This produces a clean scalar `a_sled(t)` (and optionally other components) that 
 
 ### Pipeline 1: Velocity Estimation
 
-Goal: a **smooth, physically reasonable velocity trace** along the sled’s motion axis for charts and analytics.
+Goal: a **smooth, physically reasonable velocity trace** in **world-frame components** (`velocity_x`, `velocity_y`, `velocity_z`) with magnitude `velocity_magnitude` (`m/s`) for charts, power (`P = m · a · v`), and analytics. The sled may move with lateral drift as well as along the nominal push axis, so velocity is tracked as a **3D vector**, not only a scalar along one axis.
 
-**Stages**
+**Conceptual stages (design intent)**
 
-1. **Band-limit acceleration for integration**
-   - Apply a **high-pass** (or detrend) to remove very low-frequency drift in `a_sled`.
-   - Apply a **low-pass** to remove high-frequency noise.
-   - Net effect ≈ **band-pass around motion frequencies of interest**.
+1. Band-limit acceleration before integration (high-pass removes very slow drift; low-pass trims noise).
+2. Integrate to velocity with explicit handling of rest vs motion so integrated bias does not grow unbounded at the tail of a sprint.
+3. Optionally smooth the velocity trace lightly for plotting.
 
-   Example conceptual cutoffs (tunable per hardware/workout):
-   - High-pass cutoff: ~0.1–0.3 Hz
-   - Low-pass cutoff: ~5–10 Hz
+#### Production implementation (current app)
 
-2. **Integrate to velocity**
-   - Numerically integrate filtered acceleration with trapezoidal integration:
-     ```text
-     v[t] = v[t-1] + 0.5 * (a_filt[t] + a_filt[t-1]) * dt
-     ```
-   - Initialize `v[0]` from boundary condition:
-     - Typically **0 m/s at workout start** for the sled.
+Orchestration: [`CalculationService`](src/features/workout/services/calculation-service.ts) runs **`AccelerationCalculationService`** then **`VelocityCalculationService`**; defaults and tunables mirror [`src/constants/constants.ts`](src/constants/constants.ts) and **Settings**.
 
-3. **Drift management**
-   - Detect **zero-velocity periods** (sled at rest) and nudge `v` back toward 0.
-   - Optionally blend with external velocity (e.g. GPS) when available to bound long-term drift.
+**Acceleration path** — [`AccelerationCalculationService`](src/features/workout/services/acceleration-calculation-service.ts)
 
-4. **Output smoothing**
-   - Apply a light **smoothing filter** (small-window low-pass / moving average) to `v(t)` for plotting.
-   - Keep this filter gentle to avoid hiding quick changes.
+Per sample (see file docblock): rotate raw accel to world frame (W3C device angles → quaternion in [`fromW3CAngles`](src/lib/quaternion.ts)), moving-average pre-smooth, **ZUPT** on **raw** accel + gyro magnitude, bias EMA toward smoothed accel when rest, **`ACCEL_*_OUTPUT`** (rotated − bias), HPF branch to **`ACC*_OUTPUT_FILTERED`**, then **two independent first-order low-pass chains** on **`ACC*_OUTPUT`**:
+
+| Output channels                                                  | Purpose                                                                                                           | Default cutoff              |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| `accx_lp` / `accy_lp` / `accz_lp` (`ACCEL_*_LP`)                 | **Leg-drive features** (`StepFeatureWindow`, e.g. `peakPropulsiveAccelLp`)                                        | **17.5 Hz** (`lpfCutoffHz`) |
+| `accx_vel_lp` / `accy_vel_lp` / `accz_vel_lp` (`ACCEL_*_VEL_LP`) | **Velocity integration only** — smoother envelope, avoids fighting per-footstrike oscillations with the leak term | **3 Hz** (`velLpfCutoffHz`) |
+
+Do **not** lower `lpfCutoffHz` globally to fix velocity charts: that attenuates individual leg-drive peaks. Tune **`velLpfCutoffHz`** for integration instead.
+
+**Velocity path** — [`VelocityCalculationService`](src/features/workout/services/velocity-calculation-service.ts)
+
+- **Acceleration source**: `integrationAccelSource` (`VelocityConfig`). Default **`vel_lp`** → integrates **`ACCEL_*_VEL_LP`**. Alternatives: `lp` (17.5 Hz LP), `hp` (output filtered), `raw` (`ACCEL_*_OUTPUT`).
+- **Integration**: leak-aware Euler per axis: `v = velLeak × (v_prev + a × dt)`. Default **`velLeak`** = **0.999** (~τ ≈ 10 s at 100 Hz). An overly low leak drains velocity between footstrikes on long sled pushes and underestimates peak speed.
+- **ZUPT hard zero**: When `ZUPT_ACTIVE` fires, velocity is **set to zero** immediately. Detector uses accel/gyro magnitude thresholds plus **`zuptMinTime`** (default **0.40 s**). Values near **~0.15 s** can false-trigger during mid-sprint quiet float phases and cause a sharp chart drop or end-of-rep spike.
+- **Sprint-direction component floor** (post-sprint / friction-only coast-down): Without it, kinetic friction keeps a non‑trivial accel while the sled is nearly stopped along the sprint line, so the integrator can **overshoot through zero** and build **false reverse-speed** magnitude before ZUPT. After **`velFloorActivationThreshold`** (default **0.5 m/s** peak speed, so heavy sleds that never exceed ~1.5 m/s still arm), the service tracks the sprint **unit vector** while speed is increasing, then when the **projection of `v` onto that axis** stays below **`velFloorDirectionThreshold`** (default **0.08 m/s**) for **`velFloorMinSamples`** consecutive samples (**3** → 30 ms at 100 Hz), it **zeros velocity** and disarms until the next sprint. ZUPT still resets state at genuine rest.
+
+**Channels / UI**: Persisted/exported workouts expose `velocity_*`, `acc*_output`, `zupt_status`, etc. Settings sliders: **`velLeak`**, **`zuptMinTime`**, **`lpfCutoffHz`**, **`velLpfCutoffHz`**, integration source, **`velFloorActivationThreshold`**, **`velFloorDirectionThreshold`**, plus other ZUPT and filter fields in [`settings.tsx`](<src/app/(app)/settings.tsx>).
+
+**Replay / sanity tools**: Offline comparison of exported JSON vs the post-fix defaults can use [`scripts/mockup-workout-velocity-chart.py`](scripts/mockup-workout-velocity-chart.py) (approximation of the same pipeline).
 
 **Output**
 
 ```ts
 type VelocitySample = {
   time: number; // workout-relative time (seconds from 0.000)
-  v: number; // m/s along sled axis
+  v: number; // preferred: velocity_magnitude in m/s, or sled-axis projection where explicitly defined
 };
 ```
 
-UI and analytics should use `VelocitySample[]` for **speed/velocity charts**, not raw acceleration.
+UI and analytics should use **`time`** plus **`velocity_magnitude`** / components for **speed/velocity charts**, not raw acceleration.
 
 ---
 
 ### Pipeline 2: Leg-Drive / Motion-Cycle Detection
+
+**Production tie-in:** Per-drive kinematic peaks (e.g. propulsive accel) read **`ACCEL_*_LP`** at **`lpfCutoffHz`** (default **17.5 Hz**) — deliberately **not** the 3 Hz velocity-integration LP — so shortening the drive-feature LP hurts individual-leg metrics.
 
 Goal: detect individual **leg drives** – the user’s drive strokes that produce sled motion – and capture the sled’s acceleration characteristics during each drive.
 
