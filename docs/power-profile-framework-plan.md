@@ -48,6 +48,8 @@ flowchart TD
 
     subgraph existing [Existing Workout Pipeline]
         SprintAnalysis[SprintAnalysisService]
+        AccelCalc[AccelerationCalculationService]
+        VelCalc[VelocityCalculationService]
         PowerCalc[PowerCalculationService]
         WorkoutPersist[workout-persistence.ts]
     end
@@ -55,11 +57,29 @@ flowchart TD
     ui --> store
     store --> services
     services --> persistence
+    AccelCalc --> VelCalc
+    VelCalc --> PowerCalc
     existing --> services
     existing --> persistence
 ```
 
 ---
+
+## Sensor kinematics and velocity pipeline (existing stack)
+
+Power Profile metrics like **peak velocity**, load–velocity charts, and derived power (`P = m · a · v`) depend on the existing sensor processing stack. The canonical description of the current production behavior lives in **Pipeline 1** in [claude.md](../claude.md).
+
+- **Orchestration**: [`CalculationService`](../src/features/workout/services/calculation-service.ts) runs `AccelerationCalculationService` → `VelocityCalculationService` and then `PowerCalculationService`.
+- **Dual LP on `ACCEL_*_OUTPUT`**:
+  - `ACCEL_*_LP` (`accx_lp`, etc.) at **17.5 Hz** (`lpfCutoffHz`) is reserved for **leg-drive features** (e.g. `StepFeatureWindow` metrics like `peakPropulsiveAccelLp`).
+  - `ACCEL_*_VEL_LP` (`accx_vel_lp`, etc.) at **3 Hz** (`velLpfCutoffHz`) is reserved for **velocity integration**, and is the default integration source (`integrationAccelSource = 'vel_lp'`).
+- **Do not** “fix velocity” by lowering `lpfCutoffHz` globally: it attenuates per-drive peaks and degrades individual leg-drive metrics. Tune `velLpfCutoffHz` for integration instead.
+- **Integration + rest handling**:
+  - Leak-aware Euler integration per axis with default `velLeak = 0.999` (less mid-sprint drain between footstrikes than `0.995`).
+  - **ZUPT** hard-zeroes velocity when `ZUPT_ACTIVE` fires; `zuptMinTime` default is **0.40 s** to avoid false triggers during mid-sprint quiet float phases.
+  - **Sprint-direction component floor** prevents friction-only coast-down from integrating through zero and creating false reverse velocity: arms at **0.5 m/s** peak speed and zeros velocity when the projection along sprint direction stays below **0.08 m/s** for **3** consecutive samples.
+- **Settings surface**: these fields are user-adjustable in [`settings.tsx`](<../src/app/(app)/settings.tsx>) and persisted via `useCalculationConfigStore` (e.g. `velLeak`, `zuptMinTime`, `velLpfCutoffHz`, floor thresholds, and integration source).
+- **Offline sanity**: [`scripts/mockup-workout-velocity-chart.py`](../scripts/mockup-workout-velocity-chart.py) approximates replay against exported JSON; any generated chart output is local-only under `artifacts/` (gitignored).
 
 ## Peak Data Hierarchy
 
@@ -68,7 +88,7 @@ flowchart TD
 | Sprint               | `SprintPowerRecord`   | peakPower, **powerMeasurementMode** ('raw' today), loadKg, peakVelocity, surfaceType, calibrationRatio, frictionConfidence, pplAtTimeOfSprint, zoneAtRecording | Extended `WorkoutEntry` in `file-db.json` |
 | Session              | `PowerProfileSession` | sessionId, sprintIds, sessionPeakPower, sessionPPLEstimate, CI snapshot, load range covered                                                                    | `sessions-db.json`                        |
 | Profile / Historical | `AthleteProfile`      | currentPPL, historicalPeakPower, pplHistory[], FV classification, historyDepthMonths, lastUpdated                                                              | `power-profile-db.json`                   |
-| Live / Active        | Session Zustand store | in-progress sprint results, curve shape, current load suggestion                                                                                               | MMKV-backed Zustand                       |
+| Live / Active        | Session Zustand store | in-progress sprint results, curve shape, selected `targetZone`, and zone prescription selector UI state                                                        | MMKV-backed Zustand                       |
 
 ---
 
@@ -279,7 +299,7 @@ The CI badge communicates overall profile confidence. The per-sprint mode label 
 ### Store (`store/`)
 
 - `athlete-profile-store.ts` — Zustand + MMKV persist; holds `AthleteProfile[]`, `activeAthleteId`, CRUD actions
-- `power-session-store.ts` — Zustand + MMKV persist; sprint results, current load suggestion, curve data, `targetZone: TrainingZone | null`, `loadSuggestionsEnabled: boolean`, `sessionMode: 'training' | 'discovery' | 'targeted_retest'`, `resumingSessionId: string | null`, `historicalPBBeatenThisSession: boolean`, `interruptedAt: number | null`, `endedAt: number | null`; cleared on clean `endSession()` or `discardSession()`
+- `power-session-store.ts` — Zustand + MMKV persist; sprint results, curve data, `targetZone: TrainingZone | null` (can change mid-session via `setTargetZone`), `loadSuggestionsEnabled: boolean` (algorithmic next-load recommendations), `sessionMode: 'training' | 'discovery' | 'targeted_retest'`, `resumingSessionId: string | null`, `historicalPBBeatenThisSession: boolean`, `interruptedAt: number | null`, `endedAt: number | null`; cleared on clean `endSession()` or `discardSession()`
 
 ### Screen
 
@@ -301,7 +321,7 @@ The CI badge communicates overall profile confidence. The per-sprint mode label 
   - **Discovery mode** — ascending/peak/descending limb detection; maps power delta % to next load increment to find PPL; ignores target zone setting.
   - **Training mode** — suggestions stay within the athlete's selected training zone. If the user has set a target zone (e.g. STRENGTH_SPEED), next-load suggestions remain within that zone's load range derived from their current PPL. Falls back to PPL-zone suggestions if no zone is selected.
   - Returns `{ nextLoadKg, rationale, zone }` and human-readable message. Reads power via the abstraction.
-  - Load suggestions can be toggled off entirely via `loadSuggestionsEnabled: boolean` on `power-session-store`. When off, the service is not called and no suggestion tile is shown.
+  - Algorithmic next-load suggestions can be toggled via `loadSuggestionsEnabled: boolean` on `power-session-store`. Zone selection UI is separate and remains available during sessions.
 
 ### Training Zone & Load Suggestion Settings
 
@@ -309,13 +329,13 @@ The CI badge communicates overall profile confidence. The per-sprint mode label 
 - Before starting a session (or from a settings panel within the session), the user can:
   - Select a target training zone (SPEED_STRENGTH, PEAK_POWER, STRENGTH_SPEED, OVERLOAD, or none).
   - Toggle load suggestions on or off.
-- When a zone is selected, the `load-suggestion-tile` shows only loads within that zone's range and labels them accordingly (e.g. "Strength-Speed zone: try 72 kg").
-- When suggestions are off, no tile is rendered; the athlete loads whatever they choose, and the sprint is still recorded and attributed to whichever zone its load falls in.
+- During a session, the workout screen shows a compact zone selector tile beside the sled mass tile. Tapping it expands an inline list of all four zones with %PPL guidance and the athlete’s kg ranges derived from PPL.
+- Selecting a zone updates `power-session-store.targetZone` (mid-session) and the selected zone label appears in the compact tile. This does not change the sled mass automatically.
 
 ### Integration
 
 - Extend the existing sprint save flow (`use-workout-actions.ts`) to capture `loadKg` from `useCalculationConfigStore` and write to `WorkoutEntry` with new fields. Set `powerSource = POWER_SOURCE` and `frictionConfidence = 'Unknown'` at save time.
-- `load-suggestion-service` is called immediately after each sprint save only when `loadSuggestionsEnabled = true`.
+- Algorithmic `load-suggestion-service` recommendations (if surfaced) are gated by `loadSuggestionsEnabled`. Zone selection is available whenever a session is active.
 
 ### Tests
 
@@ -517,7 +537,7 @@ State machine (via `power-session-store`, `mode` prop):
 ### Components
 
 - `components/ppl-power-curve.tsx` — dual-axis chart (see reference design): load (kg) on X; **power (W) on right Y-axis** (orange fitted curve + orange dots per sprint); **velocity (m/s) on left Y-axis** (blue linear fit + blue dots per sprint); zone bands as background colour regions (Speed-Strength, Peak Power, Strength-Speed, Overload); PPL marked with a vertical indicator; dots represent individual recorded sprints and update live during a session
-- `components/load-suggestion-tile.tsx` — Tile primitive; shows "Next sprint: X kg" with rationale message; hidden when load suggestions are off
+- `components/zone-prescription-selector.tsx` — in-session zone selector tile; compact selector expands inline to show zone %PPL guidance + kg ranges; updates `targetZone` mid-session
 - `components/discovery-sprint-card.tsx` — per-sprint result: load, peak power, velocity, power relative to prior sprint
 - `components/zone-prescription-card.tsx` — four zones with load ranges derived from PPL
 
@@ -604,7 +624,7 @@ Before starting any training session the athlete can configure:
 
 - Add "Select Athlete + Zone" step before starting a session (from `power-session-store`)
 - Show active zone label and current load's position relative to PPL in the live workout HUD
-- Post-sprint: show `load-suggestion-tile` only when `loadSuggestionsEnabled = true`; tile reflects the target zone
+- During an active session, show the in-session zone selector tile beside the sled mass tile; tapping expands the full zone prescription list and allows changing the `targetZone` mid-session
 - Post-sprint: if overload signal condition met, show `overload-signal-banner` with suggested action
 
 ### Training Setup Screen Additions
@@ -763,7 +783,7 @@ When the athlete records sprints at **progressively heavier loads** and power ke
 
 ### No PPL Established — Load Suggestions
 
-Before a PPL is known, load suggestions are **not shown**. The `load-suggestion-tile` is hidden entirely. Instead:
+Before a PPL is known, the zone selector shows **NO PPL YET** and nudges the athlete toward a Discovery Test. The expanded zone list is visible but disabled (zones shown, not selectable) until a PPL exists. Additionally:
 
 - The Training Setup screen shows a persistent but non-intrusive prompt: _"Run a Discovery Test to unlock personalised load prescriptions."_
 - Sprint data is still recorded and contributes to organic curve building once enough load variation has accumulated
@@ -851,7 +871,7 @@ src/features/power-profile/
 │   ├── sprint-history-card.tsx
 │   ├── sprint-metric-tile.tsx
 │   ├── ppl-power-curve.tsx
-│   ├── load-suggestion-tile.tsx
+│   ├── zone-prescription-selector.tsx
 │   ├── discovery-sprint-card.tsx
 │   └── zone-prescription-card.tsx
 └── screens/
