@@ -16,6 +16,9 @@ export function SessionPeakTiles() {
 
   const labelColor = isDark ? colors.neutral[400] : colors.neutral[500];
   const valueColor = isDark ? colors.neutral[100] : colors.neutral[900];
+  const sessionPeakPowerValueColor = isDark
+    ? colors.primary[400]
+    : colors.primary[600];
   const unitColor = isDark ? colors.neutral[500] : colors.neutral[400];
 
   return (
@@ -26,7 +29,7 @@ export function SessionPeakTiles() {
             {'SESSION PEAK PWR'}
           </Text>
           <View style={styles.valueRow}>
-            <Text style={[styles.value, { color: valueColor }]}>
+            <Text style={[styles.value, { color: sessionPeakPowerValueColor }]}>
               {sessionPeakPower != null
                 ? Math.round(sessionPeakPower).toString()
                 : '--'}
