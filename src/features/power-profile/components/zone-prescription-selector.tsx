@@ -1,7 +1,10 @@
 import { useColorScheme } from 'nativewind';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
+  Animated,
+  Modal as RNModal,
   Pressable,
+  type ScrollView,
   StyleSheet,
   View as RNView,
   type ViewStyle,
@@ -51,7 +54,37 @@ const ZONE_PPL_RANGE_LABEL: Record<TrainingZone, string> = {
 };
 
 const TILE_CLASS =
-  'flex-1 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900 justify-center';
+  'w-full bg-neutral-100 px-4 py-3 dark:bg-charcoal-900 justify-center';
+
+/** Vertical peek carousel: one centered row + partial rows above/below */
+const CAROUSEL_ITEM_HEIGHT = 96;
+const CAROUSEL_VISIBLE_ROWS = 3;
+
+function clampCarouselIndex(i: number, len: number): number {
+  return Math.max(0, Math.min(len - 1, Math.round(i)));
+}
+
+function getCarouselAnimations(params: {
+  scrollY: Animated.Value;
+  index: number;
+}): {
+  opacity: Animated.AnimatedInterpolation<number>;
+  scale: Animated.AnimatedInterpolation<number>;
+} {
+  const { scrollY, index } = params;
+  const h = CAROUSEL_ITEM_HEIGHT;
+  const opacity = scrollY.interpolate({
+    inputRange: [(index - 1) * h, index * h, (index + 1) * h],
+    outputRange: [0.55, 1, 0.55],
+    extrapolate: 'clamp',
+  });
+  const scale = scrollY.interpolate({
+    inputRange: [(index - 1) * h, index * h, (index + 1) * h],
+    outputRange: [0.92, 1, 0.92],
+    extrapolate: 'clamp',
+  });
+  return { opacity, scale };
+}
 
 function formatKgRange(
   zone: TrainingZone,
@@ -98,7 +131,7 @@ function compactTilePresentation(params: {
 }
 
 // ---------------------------------------------------------------------------
-// Compact tile (sits beside SledMassTile)
+// Compact tile (stacked below SledMassTile on workout screen)
 // ---------------------------------------------------------------------------
 
 export function ZonePrescriptionCompactTile({
@@ -131,7 +164,7 @@ export function ZonePrescriptionCompactTile({
   });
 
   return (
-    <RNView className="flex-1">
+    <RNView className="w-full">
       <Tile
         pressable
         onPress={onToggle}
@@ -169,102 +202,201 @@ export function ZonePrescriptionCompactTile({
   );
 }
 
-function NoPrescriptionNudge({
-  isDark,
-  disabledRowBg,
-  mutedSmall,
-}: {
-  isDark: boolean;
-  disabledRowBg: string;
-  mutedSmall: string;
-}) {
-  return (
-    <RNView
-      style={[
-        styles.nudgeRow,
-        {
-          backgroundColor: disabledRowBg,
-          borderColor: isDark ? colors.charcoal[700] : colors.neutral[300],
-        },
-      ]}
-    >
-      <Text style={[styles.nudgeTitle, { color: mutedSmall }]}>
-        {'Run a Discovery Test to unlock zones'}
-      </Text>
-    </RNView>
-  );
-}
-
-function ZonePrescriptionRow({
+function ZoneCarouselCard({
   zone,
+  index,
   prescription,
-  targetZone,
+  scrollY,
   isDark,
   rowBg,
-  disabledRowBg,
   mutedSmall,
-  onSelectZone,
+  onPress,
 }: {
   zone: TrainingZone;
+  index: number;
   prescription: ZonePrescription | null;
-  targetZone: TrainingZone | null;
+  scrollY: Animated.Value;
   isDark: boolean;
   rowBg: string;
-  disabledRowBg: string;
   mutedSmall: string;
-  onSelectZone: (z: TrainingZone) => void;
+  onPress: () => void;
 }) {
-  const isSelected = prescription ? targetZone === zone : false;
-  const band = prescription?.[zone];
-  const kgText = band ? formatKgRange(zone, band) : '—';
+  const kgText =
+    prescription !== null ? formatKgRange(zone, prescription[zone]) : '—';
   const zoneColor = ZONE_COLORS[zone];
-  const canPress = Boolean(prescription);
+  const borderColor = isDark ? colors.charcoal[700] : colors.neutral[300];
 
-  const borderColor = isSelected
-    ? colors.primary[400]
-    : isDark
-      ? colors.charcoal[700]
-      : colors.neutral[300];
+  const { opacity, scale } = getCarouselAnimations({ scrollY, index });
 
   return (
     <Pressable
-      disabled={!canPress}
-      onPress={() => onSelectZone(zone)}
-      style={({ pressed }) => [
-        styles.zoneRow,
-        {
-          backgroundColor: canPress ? rowBg : disabledRowBg,
-          borderColor,
-          borderWidth: isSelected ? 2 : 1,
-          opacity: !canPress ? 0.55 : pressed ? 0.85 : 1,
-        },
-      ]}
+      onPress={onPress}
+      style={styles.carouselSlot}
       testID={`zone-row-${zone}`}
     >
-      <RNView style={styles.zoneRowLeft}>
-        <Text style={[styles.zoneName, { color: zoneColor }]}>
-          {ZONE_LABELS[zone]}
-        </Text>
-        <Text style={[styles.zonePct, { color: mutedSmall }]}>
-          {ZONE_PPL_RANGE_LABEL[zone]}
-          {isSelected ? ' · current target' : ''}
-        </Text>
-      </RNView>
-      <Text
+      <Animated.View
         style={[
-          styles.zoneKg,
-          { color: isDark ? colors.neutral[100] : colors.neutral[900] },
+          styles.carouselCardOuter,
+          {
+            opacity,
+            transform: [{ scale }],
+            borderColor,
+            backgroundColor: rowBg,
+          },
         ]}
       >
-        {kgText}
-      </Text>
+        <RNView style={styles.carouselCardInner}>
+          <RNView style={styles.carouselCardLeft}>
+            <Text style={[styles.zoneName, { color: zoneColor }]}>
+              {ZONE_LABELS[zone]}
+            </Text>
+            <Text style={[styles.zonePct, { color: mutedSmall }]}>
+              {ZONE_PPL_RANGE_LABEL[zone]}
+            </Text>
+          </RNView>
+          <Text
+            style={[
+              styles.zoneKg,
+              { color: isDark ? colors.neutral[100] : colors.neutral[900] },
+            ]}
+          >
+            {kgText}
+          </Text>
+        </RNView>
+      </Animated.View>
     </Pressable>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Expanded panel (full width below LoadRow)
+// Expanded panel (centered modal over workout screen)
 // ---------------------------------------------------------------------------
+
+function ZoneTargetCarouselList({
+  prescription,
+  scrollRef,
+  scrollY,
+  carouselHeight,
+  onMomentumScrollEnd,
+  onPressZone,
+  isDark,
+  mutedSmall,
+}: {
+  prescription: ZonePrescription | null;
+  scrollRef: React.RefObject<ScrollView | null>;
+  scrollY: Animated.Value;
+  carouselHeight: number;
+  onMomentumScrollEnd: (e: {
+    nativeEvent: { contentOffset: { y: number } };
+  }) => void;
+  onPressZone: (index: number) => void;
+  isDark: boolean;
+  mutedSmall: string;
+}) {
+  const rowBg = isDark ? colors.charcoal[900] : colors.neutral[100];
+  return (
+    <Animated.ScrollView
+      ref={scrollRef}
+      testID="zone-prescription-carousel"
+      style={{ height: carouselHeight }}
+      contentContainerStyle={{ paddingVertical: CAROUSEL_ITEM_HEIGHT }}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={CAROUSEL_ITEM_HEIGHT}
+      snapToAlignment="start"
+      decelerationRate="fast"
+      onScroll={Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true }
+      )}
+      onMomentumScrollEnd={onMomentumScrollEnd}
+      scrollEventThrottle={16}
+    >
+      {ZONE_DISPLAY_ORDER.map((zone, index) => (
+        <ZoneCarouselCard
+          key={zone}
+          zone={zone}
+          index={index}
+          prescription={prescription}
+          scrollY={scrollY}
+          isDark={isDark}
+          rowBg={rowBg}
+          mutedSmall={mutedSmall}
+          onPress={() => onPressZone(index)}
+        />
+      ))}
+    </Animated.ScrollView>
+  );
+}
+
+function ZoneTargetCarouselPopup({
+  visible,
+  onCollapse,
+  isDark,
+  headerMuted,
+  mutedSmall,
+  prescription,
+  scrollRef,
+  scrollY,
+  carouselHeight,
+  onMomentumScrollEnd,
+  onPressZone,
+}: {
+  visible: boolean;
+  onCollapse: () => void;
+  isDark: boolean;
+  headerMuted: string;
+  mutedSmall: string;
+  prescription: ZonePrescription | null;
+  scrollRef: React.RefObject<ScrollView | null>;
+  scrollY: Animated.Value;
+  carouselHeight: number;
+  onMomentumScrollEnd: (e: {
+    nativeEvent: { contentOffset: { y: number } };
+  }) => void;
+  onPressZone: (index: number) => void;
+}) {
+  const popupBg = isDark ? colors.charcoal[900] : colors.neutral[50];
+  return (
+    <RNModal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCollapse}
+      testID="zone-prescription-expanded"
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss zone picker"
+        style={styles.backdrop}
+        onPress={onCollapse}
+      >
+        <RNView
+          style={[styles.popupCard, { backgroundColor: popupBg }]}
+          onStartShouldSetResponder={() => true}
+        >
+          <Text style={[styles.panelHeader, { color: headerMuted }]}>
+            {'ZONE PRESCRIPTION · 4 ZONES DERIVED FROM PPL'}
+          </Text>
+          {!prescription ? (
+            <Text style={[styles.noPplHint, { color: mutedSmall }]}>
+              {'Run a Discovery Test to see weight ranges'}
+            </Text>
+          ) : null}
+          <ZoneTargetCarouselList
+            prescription={prescription}
+            scrollRef={scrollRef}
+            scrollY={scrollY}
+            carouselHeight={carouselHeight}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            onPressZone={onPressZone}
+            isDark={isDark}
+            mutedSmall={mutedSmall}
+          />
+        </RNView>
+      </Pressable>
+    </RNModal>
+  );
+}
 
 export function ZonePrescriptionExpandedPanel({
   visible,
@@ -273,6 +405,27 @@ export function ZonePrescriptionExpandedPanel({
   visible: boolean;
   onCollapse: () => void;
 }) {
+  const model = useZonePickerModel({ visible });
+
+  return (
+    <ZoneTargetCarouselPopup
+      visible={visible}
+      onCollapse={onCollapse}
+      isDark={model.isDark}
+      headerMuted={model.headerMuted}
+      mutedSmall={model.mutedSmall}
+      prescription={model.prescription}
+      scrollRef={model.scrollRef}
+      scrollY={model.scrollY}
+      carouselHeight={model.carouselHeight}
+      onMomentumScrollEnd={model.onMomentumScrollEnd}
+      onPressZone={model.scrollToIndex}
+    />
+  );
+}
+
+function useZonePickerModel(params: { visible: boolean }) {
+  const { visible } = params;
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -280,7 +433,6 @@ export function ZonePrescriptionExpandedPanel({
   const getAthleteById = useAthleteProfileStore((s) => s.getAthleteById);
   const targetZone = usePowerSessionStore((s) => s.targetZone);
   const setTargetZone = usePowerSessionStore((s) => s.setTargetZone);
-
   const athlete = activeAthleteId ? getAthleteById(activeAthleteId) : null;
   const pplLoadKg = athlete?.currentPPL?.pplLoadKg ?? null;
 
@@ -289,54 +441,74 @@ export function ZonePrescriptionExpandedPanel({
     : null;
 
   const headerMuted = colors.neutral[500];
-  const rowBg = isDark ? colors.charcoal[900] : colors.neutral[100];
-  const disabledRowBg = isDark ? colors.charcoal[950] : colors.neutral[200];
   const mutedSmall = isDark ? colors.charcoal[500] : colors.neutral[400];
 
-  if (!visible) return null;
+  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  const onSelectZone = (zone: TrainingZone) => {
-    if (!prescription) return;
-    setTargetZone(zone);
-    onCollapse();
-  };
+  const zoneCount = ZONE_DISPLAY_ORDER.length;
+  const initialIndex = useMemo(() => {
+    const resolved = targetZone ?? TrainingZone.PEAK_POWER;
+    let idx = ZONE_DISPLAY_ORDER.indexOf(resolved);
+    if (idx === -1) {
+      idx = ZONE_DISPLAY_ORDER.indexOf(TrainingZone.PEAK_POWER);
+    }
+    return idx === -1 ? 0 : idx;
+  }, [targetZone]);
 
-  return (
-    <RNView
-      className="mt-2 gap-2 rounded-3xl px-1 pb-1 pt-2"
-      style={{ backgroundColor: 'transparent' }}
-      testID="zone-prescription-expanded"
-    >
-      <Text style={[styles.panelHeader, { color: headerMuted }]}>
-        {'ZONE PRESCRIPTION · 4 ZONES DERIVED FROM PPL'}
-      </Text>
+  useEffect(() => {
+    if (!visible) return;
+    const y = initialIndex * CAROUSEL_ITEM_HEIGHT;
+    scrollRef.current?.scrollTo({ y, animated: false });
+    scrollY.setValue(y);
+  }, [visible, initialIndex, scrollY]);
 
-      {!prescription ? (
-        <NoPrescriptionNudge
-          isDark={isDark}
-          disabledRowBg={disabledRowBg}
-          mutedSmall={mutedSmall}
-        />
-      ) : null}
-
-      {ZONE_DISPLAY_ORDER.map((zone) => (
-        <ZonePrescriptionRow
-          key={zone}
-          zone={zone}
-          prescription={prescription}
-          targetZone={targetZone}
-          isDark={isDark}
-          rowBg={rowBg}
-          disabledRowBg={disabledRowBg}
-          mutedSmall={mutedSmall}
-          onSelectZone={onSelectZone}
-        />
-      ))}
-    </RNView>
+  const onMomentumScrollEnd = useCallback(
+    (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const raw = e.nativeEvent.contentOffset.y / CAROUSEL_ITEM_HEIGHT;
+      const i = clampCarouselIndex(raw, zoneCount);
+      const selected = ZONE_DISPLAY_ORDER[i];
+      if (selected !== undefined) {
+        setTargetZone(selected);
+      }
+    },
+    [setTargetZone, zoneCount]
   );
+
+  const scrollToIndex = useCallback((i: number) => {
+    const y = i * CAROUSEL_ITEM_HEIGHT;
+    scrollRef.current?.scrollTo({ y, animated: true });
+  }, []);
+
+  const carouselHeight = CAROUSEL_ITEM_HEIGHT * CAROUSEL_VISIBLE_ROWS;
+
+  return {
+    isDark,
+    headerMuted,
+    mutedSmall,
+    prescription,
+    scrollRef,
+    scrollY,
+    carouselHeight,
+    onMomentumScrollEnd,
+    scrollToIndex,
+  };
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  popupCard: {
+    width: '88%',
+    maxWidth: 420,
+    borderRadius: 24,
+    padding: 16,
+  },
   compactHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -365,27 +537,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 4,
   },
-  nudgeRow: {
+  noPplHint: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  carouselSlot: {
+    height: CAROUSEL_ITEM_HEIGHT,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  carouselCardOuter: {
+    flex: 1,
     borderRadius: 16,
     borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 4,
+    overflow: 'hidden',
   },
-  nudgeTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  zoneRow: {
+  carouselCardInner: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 14,
   },
-  zoneRowLeft: {
+  carouselCardLeft: {
     flex: 1,
     paddingRight: 12,
   },

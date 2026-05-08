@@ -78,7 +78,7 @@ function AlgorithmSection() {
     <ItemsContainer title="settings.algorithm">
       <NumericSettingItem
         label="settings.mass"
-        value={config.mass}
+        value={config.mass ?? DEFAULT_CALCULATION_CONFIG.mass}
         onChange={(mass) => updateConfig({ mass })}
         decimalPlaces={1}
       />

@@ -47,6 +47,35 @@ export const DEFAULT_CALCULATION_CONFIG: CalculationServiceConfig = {
   },
 };
 
+function mergePersistedConfig(
+  persisted: unknown,
+  current: CalculationConfigState
+): CalculationConfigState {
+  if (!persisted || typeof persisted !== 'object' || !('config' in persisted)) {
+    return current;
+  }
+  const stored = (persisted as { config?: Partial<CalculationServiceConfig> })
+    .config;
+  if (!stored || typeof stored !== 'object') {
+    return current;
+  }
+  return {
+    ...current,
+    config: {
+      ...DEFAULT_CALCULATION_CONFIG,
+      ...stored,
+      acceleration: {
+        ...DEFAULT_CALCULATION_CONFIG.acceleration,
+        ...stored.acceleration,
+      },
+      velocity: {
+        ...DEFAULT_CALCULATION_CONFIG.velocity,
+        ...stored.velocity,
+      },
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Store shape
 // ---------------------------------------------------------------------------
@@ -100,6 +129,7 @@ export const useCalculationConfigStore = create<CalculationConfigState>()(
     {
       name: 'calculation-config',
       storage: mmkvStorage,
+      merge: mergePersistedConfig,
     }
   )
 );

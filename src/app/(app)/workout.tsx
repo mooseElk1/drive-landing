@@ -444,8 +444,8 @@ function LoadRow({ sessionId }: { sessionId: string | null }) {
 
   return (
     <View className="mx-5 mb-2">
-      <View className="flex-row gap-2">
-        <SledMassTile className="flex-1 bg-neutral-100 px-4 py-3 dark:bg-charcoal-900" />
+      <View className="flex-col gap-2">
+        <SledMassTile className="w-full bg-neutral-100 px-4 py-3 dark:bg-charcoal-900" />
         <ZonePrescriptionCompactTile
           expanded={zonePanelExpanded}
           onToggle={() => setZonePanelExpanded((e) => !e)}
