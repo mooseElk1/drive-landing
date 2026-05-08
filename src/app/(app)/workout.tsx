@@ -23,6 +23,10 @@ import {
   ZonePrescriptionExpandedPanel,
 } from '@/features/power-profile/components/zone-prescription-selector';
 import { finalizeDiscoveryPPL } from '@/features/power-profile/services/discovery-ppl-finalization-service';
+import {
+  buildProvisionalPPLRevisionFromPB,
+  maybeUpgradeProvisionalPPLFromHistory,
+} from '@/features/power-profile/services/organic-ppl-revision-service';
 import { saveSession } from '@/features/power-profile/services/power-profile-persistence';
 import { classifyLoad } from '@/features/power-profile/services/zone-calculator-service';
 import { useAthleteProfileStore } from '@/features/power-profile/store/athlete-profile-store';
@@ -246,11 +250,14 @@ function WorkoutScreen() {
     discardSession();
   };
 
-  const recordSprintPeaks = (
+  const recordSprintPeaks = async (
     peakPower: number,
     peakVelocity: number,
     loadKg: number
   ) => {
+    const prevLastLoadKg = usePowerSessionStore.getState().lastSprintLoadKg;
+    const prevLastPowerW = usePowerSessionStore.getState().lastSprintPowerW;
+
     updateSessionPeaks(peakPower, peakVelocity, loadKg);
     if (activeAthleteId) {
       const athlete = getAthleteById(activeAthleteId);
@@ -261,6 +268,49 @@ function WorkoutScreen() {
         markHistoricalPeakBeaten({ powerW: peakPower, loadKg });
       }
       updateHistoricalPeak(activeAthleteId, peakPower, loadKg);
+
+      if (!athlete) return;
+
+      // Scenario B guard: when load is trending upward and power keeps rising,
+      // don't pin PPL to an early point (ascending limb discovery behavior).
+      const isAscendingLimbPB =
+        beaten &&
+        prevLastLoadKg !== null &&
+        prevLastPowerW !== null &&
+        loadKg > prevLastLoadKg &&
+        peakPower > prevLastPowerW;
+
+      if (beaten && !isAscendingLimbPB) {
+        const current = athlete.currentPPL;
+        const source = current?.estimateSource ?? 'discovery_curve';
+        const isProvisionalOrMissing =
+          current === null || source === 'organic_pb';
+
+        if (isProvisionalOrMissing) {
+          const revision = buildProvisionalPPLRevisionFromPB({
+            peakPowerW: peakPower,
+            loadKg,
+            bodyWeightKg: athlete.bodyWeightKg,
+            surfaceType: 'turf',
+          });
+          commitPPLRevision(activeAthleteId, revision);
+        }
+      }
+
+      const latest = useAthleteProfileStore
+        .getState()
+        .getAthleteById(activeAthleteId);
+      const maybeProvisional = latest?.currentPPL ?? null;
+      if (maybeProvisional) {
+        const upgraded = await maybeUpgradeProvisionalPPLFromHistory({
+          athleteId: activeAthleteId,
+          current: maybeProvisional,
+          bodyWeightKg: athlete.bodyWeightKg,
+        });
+        if (upgraded) {
+          commitPPLRevision(activeAthleteId, upgraded);
+        }
+      }
     }
   };
 
@@ -330,7 +380,7 @@ function WorkoutScreen() {
         typeof sprintPeakPower === 'number' &&
         typeof sprintPeakVelocity === 'number'
       ) {
-        recordSprintPeaks(sprintPeakPower, sprintPeakVelocity, massKg);
+        await recordSprintPeaks(sprintPeakPower, sprintPeakVelocity, massKg);
       }
       showMessage({
         message: 'Workout saved',

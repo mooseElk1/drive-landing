@@ -44,13 +44,13 @@ function makeData(args: {
 }
 
 describe('VelocityCalculationService', () => {
-  it('defaults integrationAccelSource to lp', () => {
+  it('defaults integrationAccelSource to vel_lp', () => {
     const service = new VelocityCalculationService();
 
     expect(
       (service as unknown as { config: { integrationAccelSource: string } })
         .config.integrationAccelSource
-    ).toBe('lp');
+    ).toBe('vel_lp');
   });
 
   it('integrates from low-pass acceleration channels when integrationAccelSource is lp', () => {

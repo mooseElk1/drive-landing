@@ -22,6 +22,8 @@ type PowerSessionState = {
 
   lastSprintPowerW: number | null;
   secondLastSprintPowerW: number | null;
+  lastSprintLoadKg: number | null;
+  secondLastSprintLoadKg: number | null;
 
   historicalPBBeatenThisSession: boolean;
   newHistoricalPeakThisSession: boolean;
@@ -82,6 +84,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
 
       lastSprintPowerW: null,
       secondLastSprintPowerW: null,
+      lastSprintLoadKg: null,
+      secondLastSprintLoadKg: null,
 
       historicalPBBeatenThisSession: false,
       newHistoricalPeakThisSession: false,
@@ -111,6 +115,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sessionPeakPowerLoad: null,
           lastSprintPowerW: null,
           secondLastSprintPowerW: null,
+          lastSprintLoadKg: null,
+          secondLastSprintLoadKg: null,
           historicalPBBeatenThisSession: false,
           newHistoricalPeakThisSession: false,
           newHistoricalPeakPowerW: null,
@@ -143,6 +149,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
               state.sessionPeakVelocity === null
                 ? peakVelocity
                 : Math.max(state.sessionPeakVelocity, peakVelocity),
+            secondLastSprintLoadKg: state.lastSprintLoadKg,
+            lastSprintLoadKg: loadKg,
             secondLastSprintPowerW: state.lastSprintPowerW,
             lastSprintPowerW: peakPower,
           };
@@ -177,6 +185,8 @@ export const usePowerSessionStore = create<PowerSessionState>()(
           sessionPeakPowerLoad: null,
           lastSprintPowerW: null,
           secondLastSprintPowerW: null,
+          lastSprintLoadKg: null,
+          secondLastSprintLoadKg: null,
           historicalPBBeatenThisSession: false,
           newHistoricalPeakThisSession: false,
           newHistoricalPeakPowerW: null,

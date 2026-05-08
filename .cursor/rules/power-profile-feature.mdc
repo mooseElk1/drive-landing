@@ -104,7 +104,7 @@ Sprint save (WorkoutEntry persisted)
   → power-session-store accumulates session-level peak
   → If sprint beats AthleteProfile.historicalPeakPower:
       → update historicalPeakPower + historicalPeakPowerLoad immediately
-      → write new PPLRevision (with powerMeasurementMode)
+      → if PPL not yet established, write a provisional PPLRevision at this load (LOW_CONFIDENCE until bracketed above & below)
       → re-evaluate CI
       → show pb-celebration-banner (once per session)
 

@@ -267,6 +267,14 @@ export function AthleteProfileSetupScreen(): React.ReactElement {
           <Tile className="mt-3 bg-white dark:bg-neutral-900">
             {athlete.currentPPL ? (
               <View className="mt-3">
+                {athlete.currentPPL.estimateSource === 'organic_pb' &&
+                (athlete.currentPPL.loadBracketed ?? false) === false ? (
+                  <Text className="mb-3 text-sm text-neutral-600 dark:text-neutral-300">
+                    {
+                      'Low confidence PPL — try one lighter and one heavier load to confirm your peak.'
+                    }
+                  </Text>
+                ) : null}
                 <View className="flex-row items-center justify-between">
                   <Text className="text-neutral-600 dark:text-neutral-300">
                     {translate(

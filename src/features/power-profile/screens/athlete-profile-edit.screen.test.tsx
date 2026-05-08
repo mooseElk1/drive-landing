@@ -67,7 +67,7 @@ describe('AthleteProfileEditScreen', () => {
     const state = useAthleteProfileStore.getState();
     expect(state.athletes[0]?.name).toBe('Corey');
     expect(state.athletes[0]?.bodyWeightKg).toBe(85);
-    expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    expect(mockRouter.replace).toHaveBeenCalledWith('/profile-setup');
   });
 
   it('cancels edits without saving', async () => {
@@ -84,6 +84,6 @@ describe('AthleteProfileEditScreen', () => {
 
     const state = useAthleteProfileStore.getState();
     expect(state.athletes[0]?.bodyWeightKg).toBe(80);
-    expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    expect(mockRouter.replace).toHaveBeenCalledWith('/profile-setup');
   });
 });

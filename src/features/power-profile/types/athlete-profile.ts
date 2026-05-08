@@ -7,12 +7,25 @@ export type FVClassification =
 
 export type HistoryDepth = 'NEW' | 'PARTIAL' | 'FULL';
 
+export type PPLEstimateSource = 'discovery_curve' | 'organic_pb';
+
 export type PPLRevision = {
   pplLoadKg: number;
   peakPowerW: number;
   powerMeasurementMode: PowerMeasurementMode;
   pplAsPctBW: number | null;
   ambiguousPeak: boolean;
+  /**
+   * Optional for backward compatibility with persisted revisions that predate
+   * provisional-PPL support. Treat missing as 'discovery_curve'.
+   */
+  estimateSource?: PPLEstimateSource;
+  /**
+   * Optional for backward compatibility. True means the PPL load has at least
+   * one observed sprint load above and below it; missing is treated as true for
+   * older revisions.
+   */
+  loadBracketed?: boolean;
   timestamp: number;
 };
 

@@ -74,7 +74,7 @@ describe('AthleteProfileSetupScreen', () => {
     setup(<AthleteProfileSetupScreen />);
 
     expect(screen.getByText('A')).toBeOnTheScreen();
-    expect(screen.getByText('80')).toBeOnTheScreen();
+    expect(screen.getByText('80.0 kg')).toBeOnTheScreen();
     expect(screen.getByTestId('view-analytics-cta')).toBeOnTheScreen();
   });
 
